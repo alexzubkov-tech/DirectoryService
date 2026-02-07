@@ -27,27 +27,9 @@ public class LocationConfiguration: IEntityTypeConfiguration<Location>
         builder.HasIndex(l => l.LocationName)
             .IsUnique();
 
-        builder.OwnsOne(l => l.LocationAddress, lb =>
+        builder.OwnsOne(l => l.LocationAddress, la =>
         {
-            lb.Property(l => l.Country)
-                .IsRequired()
-                .HasMaxLength(LengthConstants.LENGTH120)
-                .HasColumnName("country");
-
-            lb.Property(l => l.City)
-                .IsRequired()
-                .HasMaxLength(LengthConstants.LENGTH120)
-                .HasColumnName("city");
-
-            lb.Property(l => l.Street)
-                .IsRequired()
-                .HasMaxLength(LengthConstants.LENGTH120)
-                .HasColumnName("street");
-
-            lb.Property(l => l.BuildingNumber)
-                .IsRequired()
-                .HasMaxLength(LengthConstants.LENGTH120)
-                .HasColumnName("building_number");
+            la.ToJson("address");
         });
 
         builder.Property(l => l.Timezone)
@@ -59,7 +41,7 @@ public class LocationConfiguration: IEntityTypeConfiguration<Location>
             .HasColumnName("is_active")
             .IsRequired()
             .HasDefaultValue(true);
-        
+
         builder.HasQueryFilter(l => l.IsActive);
 
         builder.Property(l => l.CreatedAt)

@@ -65,6 +65,6 @@ public class DepartmentConfiguration: IEntityTypeConfiguration<Department>
         builder.HasMany(d => d.Children)
             .WithOne(d => d.Parent)
             .HasForeignKey(d => d.ParentId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
