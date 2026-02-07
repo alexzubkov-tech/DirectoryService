@@ -5,19 +5,24 @@ namespace DirectoryService.Domain.Entities;
 
 public class Department
 {
+    // для ef core
+    private Department()
+    {
+    }
+
     private List<Department> _children = new ();
     private List<DepartmentLocation> _departmentLocations = new ();
     private List<DepartmentPosition> _departmentPositions = new ();
 
     private Department(
-        DepartmentName name,
+        DepartmentName departmentName,
         DepartmentIdentifier departmentIdentifier,
         DepartmentPath departmentPath,
         short depth,
         Department? parent)
     {
         Id = Guid.NewGuid();
-        Name = name;
+        DepartmentName = departmentName;
         DepartmentIdentifier = departmentIdentifier;
         DepartmentPath = departmentPath;
         Depth = depth;
@@ -30,7 +35,7 @@ public class Department
 
     public Guid Id { get; }
 
-    public DepartmentName Name { get; private set; }
+    public DepartmentName DepartmentName { get; private set; }
 
     public DepartmentIdentifier DepartmentIdentifier { get; private set; }
 
@@ -69,7 +74,7 @@ public class Department
 
     public Result Rename(DepartmentName newName)
     {
-        Name = newName;
+        DepartmentName = newName;
         return Result.Success();
     }
 

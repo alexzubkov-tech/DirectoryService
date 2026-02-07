@@ -5,12 +5,17 @@ namespace DirectoryService.Domain.Entities;
 
 public class Location
 {
+    // для ef core
+    private Location()
+    {
+    }
+
     private readonly List<DepartmentLocation> _departmentLocations = new();
 
-    private Location(LocationName name, LocationAddress locationAddress, LocationTimeZone timezone)
+    private Location(LocationName locationName, LocationAddress locationAddress, LocationTimeZone timezone)
     {
         Id = Guid.NewGuid();
-        Name = name;
+        LocationName = locationName;
         LocationAddress = locationAddress;
         Timezone = timezone;
         IsActive = true;
@@ -20,7 +25,7 @@ public class Location
 
     public Guid Id { get; }
 
-    public LocationName Name { get; private set; }
+    public LocationName LocationName { get; private set; }
 
     public LocationAddress LocationAddress { get; private set; }
 

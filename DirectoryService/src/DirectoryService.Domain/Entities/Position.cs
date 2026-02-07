@@ -5,12 +5,17 @@ namespace DirectoryService.Domain.Entities;
 
 public class Position
 {
+    // для ef core
+    private Position()
+    {
+    }
+
     private readonly List<DepartmentPosition> _departmentPositions = new();
 
-    private Position(PositionName name, string? description)
+    private Position(PositionName positionName, string? description)
     {
         Id = Guid.NewGuid();
-        Name = name;
+        PositionName = positionName;
         Description = description;
         IsActive = true;
         CreatedAt = DateTime.UtcNow;
@@ -19,7 +24,7 @@ public class Position
 
     public Guid Id { get; }
 
-    public PositionName Name { get; private set; }
+    public PositionName PositionName { get; private set; }
 
     public string? Description { get; private set; }
 
@@ -33,7 +38,7 @@ public class Position
 
     public static Result<Position> Create(PositionName name, string? description)
     {
-        if (description != null && description.Length > 1000)
+        if (description != null && description.Length > LengthConstants.LENGTH1000)
             return Result.Failure<Position>("Description must not exceed 1000 characters");
 
         return Result.Success(new Position(name, description));

@@ -4,8 +4,6 @@ namespace DirectoryService.Domain.ValueObjects;
 
 public record DepartmentName
 {
-    public const int MIN_LENGTH = 3;
-    public const int MAX_LENGTH = 150;
 
     private DepartmentName(string value)
     {
@@ -19,11 +17,11 @@ public record DepartmentName
         if (string.IsNullOrWhiteSpace(value))
             return Result.Failure<DepartmentName>("Name cannot be empty");
 
-        if (value.Length < MIN_LENGTH)
-            return Result.Failure<DepartmentName>($"Name must be at least {MIN_LENGTH} characters long");
+        if (value.Length < LengthConstants.LENGTH3)
+            return Result.Failure<DepartmentName>($"Name must be at least {LengthConstants.LENGTH3} characters long");
 
-        if (value.Length > MAX_LENGTH)
-            return Result.Failure<DepartmentName>($"Name must be less than {MAX_LENGTH} characters long");
+        if (value.Length > LengthConstants.LENGTH150)
+            return Result.Failure<DepartmentName>($"Name must be less than {LengthConstants.LENGTH150} characters long");
 
         return Result.Success(new DepartmentName(value));
     }
