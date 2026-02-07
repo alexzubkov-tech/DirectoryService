@@ -5,10 +5,6 @@ namespace DirectoryService.Domain.ValueObjects;
 
 public record DepartmentIdentifier
 {
-    public const int MIN_LENGTH = 3;
-
-    public const short MAX_LENGTH = 150;
-
     private static readonly Regex LatinRegex = new(@"^[a-zA-Z]+$", RegexOptions.Compiled);
 
     private DepartmentIdentifier(string value)
@@ -23,7 +19,7 @@ public record DepartmentIdentifier
         if (string.IsNullOrWhiteSpace(value))
             return Result.Failure<DepartmentIdentifier>("Identifier cannot be empty");
 
-        if (value.Length < MIN_LENGTH || value.Length > MAX_LENGTH)
+        if (value.Length < LengthConstants.LENGTH3 || value.Length > LengthConstants.LENGTH150)
             return Result.Failure<DepartmentIdentifier>("Identifier length must be between 3 and 150");
 
         if (!LatinRegex.IsMatch(value))

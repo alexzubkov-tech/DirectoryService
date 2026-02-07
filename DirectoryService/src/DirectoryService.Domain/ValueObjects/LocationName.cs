@@ -4,9 +4,6 @@ namespace DirectoryService.Domain.ValueObjects;
 
 public record LocationName
 {
-    public const int MIN_LENGTH = 3;
-    public const int MAX_LENGTH = 120;
-
     private LocationName(string value)
     {
         Value = value;
@@ -19,11 +16,11 @@ public record LocationName
         if (string.IsNullOrWhiteSpace(name))
             return Result.Failure<LocationName>("Location name cannot be empty");
 
-        if (name.Length < MIN_LENGTH)
-            return Result.Failure<LocationName>($"Location name must be at least {MIN_LENGTH} characters");
+        if (name.Length < LengthConstants.LENGTH3)
+            return Result.Failure<LocationName>($"Location name must be at least {LengthConstants.LENGTH3} characters");
 
-        if (name.Length > MAX_LENGTH)
-            return Result.Failure<LocationName>($"Location name must be less than {MAX_LENGTH} characters");
+        if (name.Length > LengthConstants.LENGTH120)
+            return Result.Failure<LocationName>($"Location name must be less than {LengthConstants.LENGTH120} characters");
 
         return Result.Success(new LocationName(name));
     }
