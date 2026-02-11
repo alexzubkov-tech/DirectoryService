@@ -190,16 +190,16 @@ namespace DirectoryService.Infrastructure.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("timezone('utc', now())");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("description");
-
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
+
+                    b.Property<string>("PositionDescription")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("position_description");
 
                     b.Property<string>("PositionName")
                         .IsRequired()
@@ -226,7 +226,7 @@ namespace DirectoryService.Infrastructure.Migrations
                     b.HasOne("DirectoryService.Domain.Entities.Department", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Parent");
                 });
@@ -236,13 +236,13 @@ namespace DirectoryService.Infrastructure.Migrations
                     b.HasOne("DirectoryService.Domain.Entities.Department", null)
                         .WithMany("DepartmentLocations")
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("DirectoryService.Domain.Entities.Location", null)
                         .WithMany("DepartmentLocations")
                         .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -251,13 +251,13 @@ namespace DirectoryService.Infrastructure.Migrations
                     b.HasOne("DirectoryService.Domain.Entities.Department", null)
                         .WithMany("DepartmentPositions")
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("DirectoryService.Domain.Entities.Position", null)
                         .WithMany("DepartmentPositions")
                         .HasForeignKey("PositionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -270,31 +270,27 @@ namespace DirectoryService.Infrastructure.Migrations
 
                             b1.Property<string>("BuildingNumber")
                                 .IsRequired()
-                                .HasMaxLength(120)
-                                .HasColumnType("character varying(120)")
-                                .HasColumnName("building_number");
+                                .HasColumnType("text");
 
                             b1.Property<string>("City")
                                 .IsRequired()
-                                .HasMaxLength(120)
-                                .HasColumnType("character varying(120)")
-                                .HasColumnName("city");
+                                .HasColumnType("text");
 
                             b1.Property<string>("Country")
                                 .IsRequired()
-                                .HasMaxLength(120)
-                                .HasColumnType("character varying(120)")
-                                .HasColumnName("country");
+                                .HasColumnType("text");
 
                             b1.Property<string>("Street")
                                 .IsRequired()
-                                .HasMaxLength(120)
-                                .HasColumnType("character varying(120)")
-                                .HasColumnName("street");
+                                .HasColumnType("text");
 
                             b1.HasKey("LocationId");
 
                             b1.ToTable("locations");
+
+                            b1
+                                .ToJson("address")
+                                .HasColumnType("jsonb");
 
                             b1.WithOwner()
                                 .HasForeignKey("LocationId");

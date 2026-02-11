@@ -1,3 +1,4 @@
+using DirectoryService.Application;
 using DirectoryService.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructurePostgres(builder.Configuration);
 
 var app = builder.Build();

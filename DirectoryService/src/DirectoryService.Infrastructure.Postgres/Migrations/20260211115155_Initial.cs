@@ -33,7 +33,7 @@ namespace DirectoryService.Infrastructure.Migrations
                         column: x => x.parent_id,
                         principalTable: "departments",
                         principalColumn: "department_id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -42,14 +42,11 @@ namespace DirectoryService.Infrastructure.Migrations
                 {
                     location_id = table.Column<Guid>(type: "uuid", nullable: false),
                     location_name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    country = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    city = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    street = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    building_number = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     timezone = table.Column<string>(type: "text", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "timezone('utc', now())"),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "timezone('utc', now())")
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "timezone('utc', now())"),
+                    address = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -62,7 +59,7 @@ namespace DirectoryService.Infrastructure.Migrations
                 {
                     position_id = table.Column<Guid>(type: "uuid", nullable: false),
                     position_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    position_description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "timezone('utc', now())"),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "timezone('utc', now())")
@@ -88,13 +85,13 @@ namespace DirectoryService.Infrastructure.Migrations
                         column: x => x.department_id,
                         principalTable: "departments",
                         principalColumn: "department_id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_department_locations_locations_location_id",
                         column: x => x.location_id,
                         principalTable: "locations",
                         principalColumn: "location_id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -113,13 +110,13 @@ namespace DirectoryService.Infrastructure.Migrations
                         column: x => x.department_id,
                         principalTable: "departments",
                         principalColumn: "department_id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_department_positions_positions_position_id",
                         column: x => x.position_id,
                         principalTable: "positions",
                         principalColumn: "position_id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
