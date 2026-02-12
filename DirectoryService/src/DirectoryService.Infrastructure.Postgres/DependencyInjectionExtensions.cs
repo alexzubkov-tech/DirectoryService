@@ -32,7 +32,7 @@ public static class DependencyInjectionExtensions
             options.UseLoggerFactory(loggerFactory);
         });
         
-        services.AddScoped<ILocationsRepository, EfCoreLocationsRepository>();
+        services.AddScoped<ILocationsRepository, LocationsRepository>();
         
         return services;
     }

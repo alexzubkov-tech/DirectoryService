@@ -1,44 +1,38 @@
 ﻿using CSharpFunctionalExtensions;
-using System;
 using DirectoryService.Domain.Shared;
-using TimeZoneConverter; // Нужно установить NuGet пакет TimeZoneConverter
 
 namespace DirectoryService.Domain.ValueObjects;
 
 public sealed record LocationTimeZone
 {
-    private LocationTimeZone(string value) => Value = value;
+    private LocationTimeZone(string value)
+    {
+        Value = value;
+    }
 
     public string Value { get; }
 
-    public static Result<LocationTimeZone, Error> Create(string ianaTimeZone)
+    public static Result<LocationTimeZone, Error> Create(string value)
     {
-        if (string.IsNullOrWhiteSpace(ianaTimeZone))
+        if (string.IsNullOrWhiteSpace(value))
         {
             return Result.Failure<LocationTimeZone, Error>(
-                Error.Validation("timezone.empty", "The time zone code cannot be empty"));
+                Error.Validation(
+                    "location.timezone.empty",
+                    "Time zone cannot be empty"));
         }
 
-        try
-        {
-            string windowsTimeZoneId = TZConvert.IanaToWindows(ianaTimeZone);
-
-            TimeZoneInfo.FindSystemTimeZoneById(windowsTimeZoneId);
-
-            return Result.Success<LocationTimeZone, Error>(new LocationTimeZone(ianaTimeZone));
-        }
-        catch (TimeZoneNotFoundException)
+        if (!TimeZoneInfo.TryFindSystemTimeZoneById(value, out _))
         {
             return Result.Failure<LocationTimeZone, Error>(
-                Error.Validation("timezone.invalid", $"Invalid IANA time zone code: '{ianaTimeZone}'"));
+                Error.Validation(
+                    "location.timezone.invalid",
+                    "Value is not a valid IANA time zone"));
         }
-        catch (InvalidTimeZoneException)
-        {
-            return Result.Failure<LocationTimeZone, Error>(
-                Error.Validation("timezone.invalid", $"Invalid IANA time zone code: '{ianaTimeZone}'"));
-        }
+
+        return Result.Success<LocationTimeZone, Error>(
+            new LocationTimeZone(value));
     }
 
     public override string ToString() => Value;
-
 }
