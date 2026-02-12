@@ -1,26 +1,37 @@
-﻿using System.Collections.ObjectModel;
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
+using DirectoryService.Domain.Shared;
 
 namespace DirectoryService.Domain.ValueObjects;
 
 public sealed record LocationTimeZone
 {
-    private static readonly ReadOnlyCollection<string> ValidTimezones =
-        new(TimeZoneInfo.GetSystemTimeZones().Select(tz => tz.Id).ToList());
-
-    private LocationTimeZone(string value) => Value = value;
+    private LocationTimeZone(string value)
+    {
+        Value = value;
+    }
 
     public string Value { get; }
 
-    public static Result<LocationTimeZone> Create(string value)
+    public static Result<LocationTimeZone, Error> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-            return Result.Failure<LocationTimeZone>("The time zone code cannot be empty");
+        {
+            return Result.Failure<LocationTimeZone, Error>(
+                Error.Validation(
+                    "location.timezone.empty",
+                    "Time zone cannot be empty"));
+        }
 
-        if (!ValidTimezones.Contains(value))
-            return Result.Failure<LocationTimeZone>($"Invalid IANA time Zone code: '{value}'");
+        if (!TimeZoneInfo.TryFindSystemTimeZoneById(value, out _))
+        {
+            return Result.Failure<LocationTimeZone, Error>(
+                Error.Validation(
+                    "location.timezone.invalid",
+                    "Value is not a valid IANA time zone"));
+        }
 
-        return Result.Success(new LocationTimeZone(value));
+        return Result.Success<LocationTimeZone, Error>(
+            new LocationTimeZone(value));
     }
 
     public override string ToString() => Value;
