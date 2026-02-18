@@ -1,7 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
-using DirectoryService.Domain.ValueObjects;
+using DirectoryService.Domain.Departments.ValueObjects;
 
-namespace DirectoryService.Domain.Entities;
+namespace DirectoryService.Domain.Departments;
 
 public class Department
 {

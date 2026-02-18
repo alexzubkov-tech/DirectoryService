@@ -1,16 +1,15 @@
 ﻿using DirectoryService.Application.Abstractions;
 using DirectoryService.Application.Locations.CreateLocation;
 using DirectoryService.Contracts.Locations;
+using DirectoryService.Presenters.Controllers;
 using DirectoryService.Presenters.ResponseExtensions;
 using Microsoft.AspNetCore.Mvc;
 
 
 namespace DirectoryService.Presenters.Locations;
 
-[ApiController]
 [Route("api/locations")]
-
-public class LocationsController: ControllerBase
+public class LocationsController: ApplicationController
 {
     [HttpPost]
 

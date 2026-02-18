@@ -1,6 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
-using DirectoryService.Domain.Entities;
-using DirectoryService.Domain.Shared;
+using DirectoryService.Domain.Locations;
+using Shared;
 
 namespace DirectoryService.Application.Locations;
 

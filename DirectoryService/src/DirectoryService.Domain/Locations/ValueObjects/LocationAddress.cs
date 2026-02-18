@@ -1,7 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
-using DirectoryService.Domain.Shared;
+using Shared;
+using Shared.Extensions;
 
-namespace DirectoryService.Domain.ValueObjects;
+namespace DirectoryService.Domain.Locations.ValueObjects;
 
 public record LocationAddress
 {
@@ -32,35 +33,31 @@ public record LocationAddress
     {
         if (string.IsNullOrWhiteSpace(country))
         {
-            return Result.Failure<LocationAddress, Error>(
-                Error.Validation("country.empty","Country cannot be empty"));
+            return GeneralErrors.ValueIsRequired("Country");
         }
 
         if (string.IsNullOrWhiteSpace(city))
         {
-            return Result.Failure<LocationAddress, Error>(
-                Error.Validation("city.empty","City cannot be empty"));
+            return GeneralErrors.ValueIsRequired("City");
         }
 
         if (string.IsNullOrWhiteSpace(street))
         {
-            return Result.Failure<LocationAddress, Error>(
-                Error.Validation("street.empty","Street cannot be empty"));
+            return GeneralErrors.ValueIsRequired("Street");
         }
 
         if (string.IsNullOrWhiteSpace(buildingNumber))
         {
-            return Result.Failure<LocationAddress, Error>(
-                Error.Validation("buildingNumber.empty","BuildingNumber cannot be empty"));
+            return GeneralErrors.ValueIsRequired("BuildingNumber");
         }
 
         var address = new LocationAddress(
-            country,
-            city,
-            street,
-            buildingNumber
+            country.NormalizeSpaces(),
+            city.NormalizeSpaces(),
+            street.NormalizeSpaces(),
+            buildingNumber.NormalizeSpaces()
         );
 
-        return Result.Success<LocationAddress, Error>(address);
+        return address;
     }
 }

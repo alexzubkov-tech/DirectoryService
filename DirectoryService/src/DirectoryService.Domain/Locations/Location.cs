@@ -1,8 +1,9 @@
 ﻿using CSharpFunctionalExtensions;
-using DirectoryService.Domain.Shared;
-using DirectoryService.Domain.ValueObjects;
+using DirectoryService.Domain.Departments;
+using DirectoryService.Domain.Locations.ValueObjects;
+using Shared;
 
-namespace DirectoryService.Domain.Entities;
+namespace DirectoryService.Domain.Locations;
 
 public class Location
 {
@@ -41,7 +42,7 @@ public class Location
     public DateTime UpdatedAt { get; private set; }
 
     public static Result<Location, Error> Create(LocationName name, LocationAddress locationAddress, LocationTimeZone timezone)
-        => Result.Success<Location, Error>(new Location(name, locationAddress, timezone));
+        => new Location(name, locationAddress, timezone);
 
     public void Deactivate()
     {

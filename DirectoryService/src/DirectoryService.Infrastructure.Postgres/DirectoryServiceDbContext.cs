@@ -1,4 +1,6 @@
-﻿using DirectoryService.Domain.Entities;
+﻿using DirectoryService.Domain.Departments;
+using DirectoryService.Domain.Locations;
+using DirectoryService.Domain.Positions;
 using Microsoft.EntityFrameworkCore;
 
 namespace DirectoryService.Infrastructure;

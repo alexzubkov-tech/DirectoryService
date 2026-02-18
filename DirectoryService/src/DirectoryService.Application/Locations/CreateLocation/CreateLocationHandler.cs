@@ -1,26 +1,35 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Abstractions;
-using DirectoryService.Domain.Entities;
-using DirectoryService.Domain.Shared;
-using DirectoryService.Domain.ValueObjects;
+using DirectoryService.Application.Extensions;
+using DirectoryService.Domain.Locations;
+using DirectoryService.Domain.Locations.ValueObjects;
+using FluentValidation;
 using Microsoft.Extensions.Logging;
+using Shared;
 
 namespace DirectoryService.Application.Locations.CreateLocation;
 
 public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
 {
+    private readonly IValidator<CreateLocationCommand> _validator;
     private readonly ILocationsRepository _locationsRepository;
     private readonly ILogger<CreateLocationHandler> _logger;
 
-    public CreateLocationHandler(ILocationsRepository locationsRepository,  ILogger<CreateLocationHandler> logger)
+    public CreateLocationHandler(IValidator<CreateLocationCommand> validator, ILocationsRepository locationsRepository,  ILogger<CreateLocationHandler> logger)
     {
+        _validator = validator;
         _locationsRepository = locationsRepository;
         _logger = logger;
     }
 
-    public async Task<Result<Guid, Error>> Handle(CreateLocationCommand command, CancellationToken cancellationToken)
+    public async Task<Result<Guid, Errors>> Handle(CreateLocationCommand command, CancellationToken cancellationToken)
     {
         // валидация входных данных
+        var validationResult = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return validationResult.ToErrors();
+        }
 
         // бизнес валидация
 
@@ -29,7 +38,7 @@ public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
         // Создание Value Objects
         var nameResult = LocationName.Create(command.CreateLocationDto.Name);
         if (nameResult.IsFailure)
-            return Result.Failure<Guid, Error>(nameResult.Error);
+            return nameResult.Error.ToErrors();
 
         var addressResult = LocationAddress.Create(
             command.CreateLocationDto.AddressDto.Country,
@@ -37,16 +46,16 @@ public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
             command.CreateLocationDto.AddressDto.Street,
             command.CreateLocationDto.AddressDto.BuildingNumber);
         if (addressResult.IsFailure)
-            return Result.Failure<Guid, Error>(addressResult.Error);
+            return addressResult.Error.ToErrors();
 
         var timezoneResult = LocationTimeZone.Create(command.CreateLocationDto.Timezone);
         if (timezoneResult.IsFailure)
-            return Result.Failure<Guid, Error>(timezoneResult.Error);
+            return timezoneResult.Error.ToErrors();
 
         // Создание сущности Location
         var locationResult = Location.Create(nameResult.Value, addressResult.Value, timezoneResult.Value);
         if (locationResult.IsFailure)
-            return Result.Failure<Guid, Error>(locationResult.Error);
+            return locationResult.Error.ToErrors();
 
         var location = locationResult.Value;
 
@@ -56,6 +65,6 @@ public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
         // Логирование
         _logger.LogInformation("Location created with id {LocationId}", location.Id);
 
-        return Result.Success<Guid, Error>(location.Id);
+        return location.Id;
     }
 }
