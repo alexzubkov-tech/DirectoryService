@@ -4,6 +4,8 @@ namespace Shared;
 
 public record Error
 {
+    private const string SEPARATOR = "||";
+
     public string Code { get; }
 
     public string Message { get; }
@@ -32,8 +34,35 @@ public record Error
     public static Error Failure(string? code, string message)
         => new(code ?? "failure", message, ErrorType.FAILURE);
 
+    public static Error Authorization(string? code, string message)
+        => new (code ?? "error.authorization", message, ErrorType.AUTHORIZATION);
+
+    public static Error Authentication(string? code, string message)
+        => new (code ?? "error.authentication", message, ErrorType.AUTHENTICATION);
+
     public Errors ToErrors() => this;
 
+    public string Serialize()
+    {
+        return string.Join(SEPARATOR, Code, Message, Type);
+    }
+
+    public static Error Deserialize(string serialized)
+    {
+        string[] parts = serialized.Split(SEPARATOR);
+
+        if (parts.Length < 3)
+        {
+            throw new ArgumentException("Invalid serialized format");
+        }
+
+        if (Enum.TryParse<ErrorType>(parts[2], out var type) == false)
+        {
+            throw new ArgumentException("Invalid serialized format");
+        }
+
+        return new Error(parts[0], parts[1], type);
+    }
 }
 
 
@@ -59,4 +88,14 @@ public enum ErrorType
     /// Ошибка конфликт.
     /// </summary>
     CONFLICT,
+
+    /// <summary>
+    /// Ошибка аутентификации.
+    /// </summary>
+    AUTHENTICATION,
+
+    /// <summary>
+    /// Ошибка авторизации
+    /// </summary>
+    AUTHORIZATION,
 }

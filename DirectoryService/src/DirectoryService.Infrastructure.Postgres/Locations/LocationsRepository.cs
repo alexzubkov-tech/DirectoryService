@@ -20,7 +20,7 @@ public class LocationsRepository: ILocationsRepository
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return Result.Success<Guid, Error>(location.Id);
+        return Result.Success<Guid, Error>(location.Id.Value);
 
     }
 

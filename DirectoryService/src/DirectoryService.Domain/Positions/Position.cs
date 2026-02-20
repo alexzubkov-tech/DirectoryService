@@ -1,6 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
+using DirectoryService.Domain.DepartmentPositions;
 using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Positions.ValueObjects;
+using Shared;
 
 namespace DirectoryService.Domain.Positions;
 
@@ -15,7 +17,7 @@ public class Position
 
     private Position(PositionName positionName, PositionDescription positionDescription)
     {
-        Id = Guid.NewGuid();
+        Id = new PositionId(Guid.NewGuid());
         PositionName = positionName;
         PositionDescription = positionDescription;
         IsActive = true;
@@ -23,7 +25,7 @@ public class Position
         UpdatedAt = CreatedAt;
     }
 
-    public Guid Id { get; }
+    public PositionId Id { get; }
 
     public PositionName PositionName { get; private set; }
 
@@ -37,9 +39,9 @@ public class Position
 
     public DateTime UpdatedAt { get; private set; }
 
-    public static Result<Position> Create(PositionName name, PositionDescription description)
+    public static Result<Position, Error> Create(PositionName name, PositionDescription description)
     {
-        return Result.Success(new Position(name, description));
+        return new Position(name, description);
     }
 
     public void Deactivate()

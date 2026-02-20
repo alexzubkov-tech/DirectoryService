@@ -1,4 +1,5 @@
 ﻿using DirectoryService.Domain;
+using DirectoryService.Domain.DepartmentLocations;
 using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Departments.ValueObjects;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +18,10 @@ public class DepartmentConfiguration: IEntityTypeConfiguration<Department>
 
         builder.Property(d => d.Id)
             .HasColumnName("department_id")
-            .IsRequired();
+            .IsRequired()
+            .HasConversion(
+                value => value.Value,
+                value => new DepartmentId(value));
 
         builder.Property(d => d.DepartmentName)
             .HasConversion(dn => dn.Value, name => DepartmentName.Create(name).Value)
@@ -35,12 +39,17 @@ public class DepartmentConfiguration: IEntityTypeConfiguration<Department>
 
         builder.Property(d => d.ParentId)
             .HasColumnName("parent_id")
-            .IsRequired(false);
+            .IsRequired(false)
+            .HasConversion(
+                value => value!.Value,
+                value => new DepartmentId(value));
 
-        builder.Property(d => d.DepartmentPath)
-            .HasConversion(dp => dp.Value, path => DepartmentPath.FromString(path))
-            .HasColumnName("department_path")
-            .IsRequired();
+        builder.ComplexProperty(d => d.DepartmentPath, nb =>
+        {
+            nb.Property(n => n.Value)
+                .HasColumnName("department_path")
+                .IsRequired();
+        });
 
         builder.Property(d => d.Depth)
             .HasColumnName("depth");
@@ -62,9 +71,18 @@ public class DepartmentConfiguration: IEntityTypeConfiguration<Department>
             .IsRequired()
             .HasDefaultValueSql("timezone('utc', now())");
 
-        builder.HasMany(d => d.Children)
-            .WithOne(d => d.Parent)
+        builder.HasMany(d => d.ChildrenDepartments)
+            .WithOne()
+            .IsRequired(false)
             .HasForeignKey(d => d.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(d => d.DepartmentLocations)
+            .WithOne()
+            .HasForeignKey(d => d.DepartmentId);
+
+        builder.HasMany(d => d.DepartmentPositions)
+            .WithOne()
+            .HasForeignKey(d => d.DepartmentId);
     }
 }
