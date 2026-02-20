@@ -1,19 +1,45 @@
-﻿using DirectoryService.Domain.Shared;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Shared;
 
 namespace DirectoryService.Presenters.ResponseExtensions;
 
 public static class ResponseExtensions
 {
-    public static ActionResult ToResponse(this Error error)
+    public static ActionResult ToResponse(this Errors errors)
     {
-        return error.Type switch
+        if (!errors.Any())
         {
-            ErrorType.VALIDATION => new BadRequestObjectResult(error.Messages),
-            ErrorType.NOT_FOUND => new NotFoundObjectResult(error.Messages),
-            ErrorType.FAILURE => new ObjectResult(error.Messages),
-            ErrorType.CONFLICT => new ConflictObjectResult(error.Messages),
-            _ => new ObjectResult(error.Messages),
+            return new ObjectResult(null)
+            {
+                StatusCode = StatusCodes.Status500InternalServerError,
+            };
+        }
+
+        var distinctErrorTypes = errors
+            .Select(x => x.Type)
+            .Distinct()
+            .ToList();
+
+        int statusCode = distinctErrorTypes.Count > 1
+            ? StatusCodes.Status500InternalServerError
+            : GetStatusCodeFromErrorType(distinctErrorTypes.First());
+
+        var envelope = Envelope.Error(errors);
+
+        return new ObjectResult(envelope)
+        {
+            StatusCode = statusCode,
         };
     }
+
+    private static int GetStatusCodeFromErrorType(ErrorType errorType) =>
+        errorType switch
+        {
+            ErrorType.VALIDATION => StatusCodes.Status400BadRequest,
+            ErrorType.NOT_FOUND => StatusCodes.Status404NotFound,
+            ErrorType.FAILURE => StatusCodes.Status500InternalServerError,
+            ErrorType.CONFLICT => StatusCodes.Status409Conflict,
+            _ => StatusCodes.Status500InternalServerError,
+        };
 }

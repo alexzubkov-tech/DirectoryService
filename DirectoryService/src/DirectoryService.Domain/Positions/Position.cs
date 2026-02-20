@@ -1,7 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
-using DirectoryService.Domain.ValueObjects;
+using DirectoryService.Domain.Departments;
+using DirectoryService.Domain.Positions.ValueObjects;
 
-namespace DirectoryService.Domain.Entities;
+namespace DirectoryService.Domain.Positions;
 
 public class Position
 {

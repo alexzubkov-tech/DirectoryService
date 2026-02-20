@@ -9,12 +9,19 @@
     <ItemGroup>
       <ProjectReference Include="..\DirectoryService.Contracts\DirectoryService.Contracts.csproj" />
       <ProjectReference Include="..\DirectoryService.Domain\DirectoryService.Domain.csproj" />
+      <ProjectReference Include="..\Shared\Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="FluentValidation" Version="12.1.1" />
+      <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.12" />
       <PackageReference Include="Scrutor" Version="7.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AdditionalFiles Include="stylecop.json" />
     </ItemGroup>
 
 </Project>
