@@ -1,55 +1,35 @@
-using DirectoryService.Application;
-using DirectoryService.Application.Locations.Fails;
-using DirectoryService.Infrastructure;
-using DirectoryService.Presenters;
+using System.Globalization;
 using DirectoryService.Web;
-using DirectoryService.Web.Middlewares;
-using Microsoft.OpenApi.Models;
-using Shared;
-using Errors = DirectoryService.Application.Locations.Fails.Errors;
+using DirectoryService.Web.Configuration;
+using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+    .CreateBootstrapLogger();
 
-builder.Services.AddProgramDependencies(builder.Configuration);
-
-builder.Services.AddOpenApi(options =>
+try
 {
-    options.AddSchemaTransformer((schema, context, _) =>
-    {
-        if (context.JsonTypeInfo.Type == typeof(Envelope<Errors>))
-        {
-            if (schema.Properties.TryGetValue("errors", out var errorsProp))
-            {
-                errorsProp.Items.Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.Schema,
-                    Id = "Error",
-                };
-            }
-        }
+    Log.Information("Starting web application");
 
-        return Task.CompletedTask;
-    });
-});
+    var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSwaggerGen(c =>
+    builder.Services.AddProgramDependencies(builder.Configuration);
+
+    var app = builder.Build();
+
+    app.UseWebConfiguration();
+
+    app.Run();
+
+}
+catch (Exception ex)
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "DirectoryService.Web",
-        Version = "v1"
-    });
-});
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
-var app = builder.Build();
 
-app.UseExceptionMiddleware();
-
-app.MapControllers();
-
-app.UseSwagger();
-app.UseSwaggerUI();
-
-app.MapOpenApi();
-
-app.Run();

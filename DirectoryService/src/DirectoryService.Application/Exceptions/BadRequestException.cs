@@ -1,12 +1,14 @@
-﻿using System.Text.Json;
+﻿using System.Text.Encodings.Web;
+using System.Text.Json;
 using Shared;
 
 namespace DirectoryService.Application.Exceptions;
 
 public class BadRequestException: Exception
 {
-    protected BadRequestException(Error[]errors)
-        : base(JsonSerializer.Serialize(errors))
+    protected internal BadRequestException(Error[] errors)
+        : base(JsonSerializer.Serialize(errors, new JsonSerializerOptions
+            { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
     {
     }
 

@@ -12,6 +12,7 @@ public record Error
 
     public string? InvalidField { get; }
 
+    [JsonConstructor]
     private Error(string code, string message, ErrorType type, string? invalidField = null)
     {
         Code = code;
