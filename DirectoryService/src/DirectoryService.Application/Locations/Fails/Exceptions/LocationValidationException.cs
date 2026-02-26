@@ -3,7 +3,7 @@ using Shared;
 
 namespace DirectoryService.Application.Locations.Fails.Exceptions;
 
-public class LocationValidationException: BadRequestException
+public class LocationValidationException: ValidationException
 {
     public LocationValidationException(Error[] errors)
         : base(errors)

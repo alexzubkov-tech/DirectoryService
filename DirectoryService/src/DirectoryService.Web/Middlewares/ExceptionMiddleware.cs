@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using DirectoryService.Application.Exceptions;
+using DirectoryService.Presenters;
 using Shared;
 
 namespace DirectoryService.Web.Middlewares;
@@ -33,6 +34,15 @@ public class ExceptionMiddleware
 
         (int code, Error[]? errors) = exception switch
         {
+            ValidationException => (
+                StatusCodes.Status400BadRequest, JsonSerializer.Deserialize<Error[]>(exception.Message)),
+
+            ConflictException => (
+                StatusCodes.Status409Conflict, JsonSerializer.Deserialize<Error[]>(exception.Message)),
+
+            FailureException => (
+                StatusCodes.Status500InternalServerError, JsonSerializer.Deserialize<Error[]>(exception.Message)),
+
             BadRequestException => (
                 StatusCodes.Status500InternalServerError, JsonSerializer.Deserialize<Error[]>(exception.Message)),
 
@@ -42,9 +52,10 @@ public class ExceptionMiddleware
             _ => (StatusCodes.Status500InternalServerError, [Error.Failure(null, "Something went wrong")]),
         };
 
+        var envelope = Envelope.Error(errors);
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = code;
 
-        await context.Response.WriteAsJsonAsync(errors);
+        await context.Response.WriteAsJsonAsync(envelope);
     }
 }

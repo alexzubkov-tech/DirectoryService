@@ -4,9 +4,9 @@ using Shared;
 
 namespace DirectoryService.Application.Exceptions;
 
-public class NotFoundException: Exception
+public class ConflictException: Exception
 {
-    protected internal NotFoundException(Error[] errors)
+    protected internal ConflictException(Error[] errors)
         : base(JsonSerializer.Serialize(errors, new JsonSerializerOptions
             { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
     {

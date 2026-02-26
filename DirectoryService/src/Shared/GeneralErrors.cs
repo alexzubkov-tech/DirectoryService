@@ -27,6 +27,6 @@ public static class GeneralErrors
 
     public static Error Failure(string? message = null)
     {
-        return Error.Failure("server.failure", message ?? "Серварная ошибка");
+        return Error.Failure("server.failure", message ?? "Серверная ошибка");
     }
 }
