@@ -16,7 +16,10 @@ public class PositionConfiguration: IEntityTypeConfiguration<Position>
 
         builder.Property(p => p.Id)
             .HasColumnName("position_id")
-            .IsRequired();
+            .IsRequired()
+            .HasConversion(
+                value => value.Value,
+                value => new PositionId(value));
 
         builder.Property(p => p.PositionName)
             .HasConversion(pn => pn.Value, name => PositionName.Create(name).Value)
@@ -51,6 +54,10 @@ public class PositionConfiguration: IEntityTypeConfiguration<Position>
             .HasColumnName("updated_at")
             .IsRequired()
             .HasDefaultValueSql("timezone('utc', now())");
+
+        builder.HasMany(p => p.DepartmentPositions)
+            .WithOne()
+            .HasForeignKey(d => d.PositionId);
 
     }
 }

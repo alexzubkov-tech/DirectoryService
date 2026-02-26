@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using DirectoryService.Domain.DepartmentLocations;
 using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Locations.ValueObjects;
 using Shared;
@@ -16,7 +17,7 @@ public class Location
 
     private Location(LocationName locationName, LocationAddress locationAddress, LocationTimeZone timezone)
     {
-        Id = Guid.NewGuid();
+        Id = new LocationId(Guid.NewGuid());
         LocationName = locationName;
         LocationAddress = locationAddress;
         Timezone = timezone;
@@ -25,7 +26,7 @@ public class Location
         UpdatedAt = CreatedAt;
     }
 
-    public Guid Id { get; }
+    public LocationId Id { get; } = null!;
 
     public LocationName LocationName { get; private set; }
 

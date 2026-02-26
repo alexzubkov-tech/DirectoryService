@@ -1,5 +1,8 @@
-﻿using DirectoryService.Domain.Departments;
+﻿using DirectoryService.Domain.DepartmentPositions;
+using DirectoryService.Domain.Departments;
+using DirectoryService.Domain.Departments.ValueObjects;
 using DirectoryService.Domain.Positions;
+using DirectoryService.Domain.Positions.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,28 +18,24 @@ public class DepartmentPositionConfiguration: IEntityTypeConfiguration<Departmen
 
         builder.Property(dp => dp.Id)
             .HasColumnName("department_position_id")
-            .IsRequired();
+            .IsRequired()
+            .HasConversion(
+                value => value.Value,
+                value => new DepartmentPositionId(value));
 
         builder.Property(dp => dp.DepartmentId)
             .HasColumnName("department_id")
-            .IsRequired();
+            .IsRequired()
+            .HasConversion(
+                value => value.Value,
+                value => new DepartmentId(value));
 
         builder.Property(dp => dp.PositionId)
             .HasColumnName("position_id")
-            .IsRequired();
-
-        builder.HasOne<Department>()
-            .WithMany(d => d.DepartmentPositions)
-            .HasForeignKey(dp => dp.DepartmentId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne<Position>()
-            .WithMany(p => p.DepartmentPositions)
-            .HasForeignKey(dp => dp.PositionId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasIndex(dp => new { dp.DepartmentId, dp.PositionId })
-            .IsUnique();
+            .IsRequired()
+            .HasConversion(
+                value => value.Value,
+                value => new PositionId(value));
 
     }
 }
