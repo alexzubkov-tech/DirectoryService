@@ -28,6 +28,7 @@ public class LocationConfiguration: IEntityTypeConfiguration<Location>
             .HasMaxLength(LengthConstants.LENGTH120);
 
         builder.HasIndex(l => l.LocationName)
+            .HasDatabaseName("ix_locations_name")
             .IsUnique();
 
         builder.OwnsOne(l => l.LocationAddress, la =>

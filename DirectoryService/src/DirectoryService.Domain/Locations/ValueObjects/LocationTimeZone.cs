@@ -31,5 +31,4 @@ public sealed record LocationTimeZone
         return new LocationTimeZone(normalized);
     }
 
-    public override string ToString() => Value;
 }

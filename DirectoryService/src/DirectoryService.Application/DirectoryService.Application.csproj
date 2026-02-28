@@ -24,4 +24,8 @@
       <AdditionalFiles Include="stylecop.json" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Extensions\" />
+    </ItemGroup>
+
 </Project>

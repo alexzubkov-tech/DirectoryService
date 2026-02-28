@@ -2,68 +2,41 @@
 
 namespace Shared;
 
+public record ErrorMessage(string Code, string Message, string? InvalidField = null);
+
 public record Error
 {
-    private const string SEPARATOR = "||";
-
-    public string Code { get; }
-
-    public string Message { get; }
+    public IEnumerable<ErrorMessage> Messages { get; } = [];
 
     public ErrorType Type { get; }
 
-    public string? InvalidField { get; }
-
     [JsonConstructor]
-    private Error(string code, string message, ErrorType type, string? invalidField = null)
+    private Error(IEnumerable<ErrorMessage> messages, ErrorType type)
     {
-        Code = code;
-        Message = message;
+        Messages = messages.ToArray();
         Type = type;
-        InvalidField = invalidField;
     }
 
     public static Error NotFound(string? code, string message, Guid? id)
-        => new(code ?? "record.not.found", message, ErrorType.NOT_FOUND);
+        => new([new ErrorMessage(code ?? "record.not.found", message)], ErrorType.NOT_FOUND);
 
     public static Error Validation(string? code, string message, string? invalidField = null)
-        => new(code ?? "value.is.invalid", message, ErrorType.VALIDATION, invalidField);
+        => new([new ErrorMessage(code ?? "value.is.invalid", message, invalidField)], ErrorType.VALIDATION);
 
     public static Error Conflict(string? code, string message)
-        => new(code ?? "value.is.invalid", message, ErrorType.CONFLICT);
+        => new([new ErrorMessage(code ?? "value.is.invalid", message)], ErrorType.CONFLICT);
 
     public static Error Failure(string? code, string message)
-        => new(code ?? "failure", message, ErrorType.FAILURE);
+        => new([new ErrorMessage(code ?? "failure", message)], ErrorType.FAILURE);
 
     public static Error Authorization(string? code, string message)
-        => new (code ?? "error.authorization", message, ErrorType.AUTHORIZATION);
+        => new([new ErrorMessage(code ?? "error.authorization", message)], ErrorType.AUTHORIZATION);
 
     public static Error Authentication(string? code, string message)
-        => new (code ?? "error.authentication", message, ErrorType.AUTHENTICATION);
+        => new([new ErrorMessage(code ?? "error.authentication", message)], ErrorType.AUTHENTICATION);
 
     public Errors ToErrors() => this;
 
-    public string Serialize()
-    {
-        return string.Join(SEPARATOR, Code, Message, Type);
-    }
-
-    public static Error Deserialize(string serialized)
-    {
-        string[] parts = serialized.Split(SEPARATOR);
-
-        if (parts.Length < 3)
-        {
-            throw new ArgumentException("Invalid serialized format");
-        }
-
-        if (Enum.TryParse<ErrorType>(parts[2], out var type) == false)
-        {
-            throw new ArgumentException("Invalid serialized format");
-        }
-
-        return new Error(parts[0], parts[1], type);
-    }
 }
 
 
