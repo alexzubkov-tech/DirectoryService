@@ -60,4 +60,6 @@ public record LocationAddress
 
         return address;
     }
+
+    public override string ToString() => $"Country: {Country}, City: {City}, Street: {Street}, BuildingNumber: {BuildingNumber}";
 }

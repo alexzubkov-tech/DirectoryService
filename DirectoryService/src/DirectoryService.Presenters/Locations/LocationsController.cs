@@ -1,5 +1,5 @@
 ﻿using DirectoryService.Application.Abstractions;
-using DirectoryService.Application.Locations.CreateLocation;
+using DirectoryService.Application.Locations.Create;
 using DirectoryService.Contracts.Locations;
 using DirectoryService.Presenters.Controllers;
 using DirectoryService.Presenters.ResponseExtensions;
@@ -15,7 +15,7 @@ public class LocationsController: ApplicationController
 
     public async Task<IActionResult> Create(
         [FromServices] ICommandHandler<Guid, CreateLocationCommand> handler,
-        [FromBody] CreateLocationDto request,
+        [FromBody] CreateLocationRequest request,
         CancellationToken cancellationToken)
     {
         var command = new CreateLocationCommand(request);
