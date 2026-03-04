@@ -4,7 +4,7 @@ namespace DirectoryService.Domain.Departments.ValueObjects;
 
 public sealed record DepartmentPath
 {
-    private const char SEPARATOR = '/';
+    private const char SEPARATOR = '.';
 
     private DepartmentPath(string value)
     {

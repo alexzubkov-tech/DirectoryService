@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Abstractions;
+using DirectoryService.Application.Locations.Fails;
 using DirectoryService.Application.Validation;
 using DirectoryService.Domain.Locations;
 using DirectoryService.Domain.Locations.Errors;
@@ -32,7 +33,7 @@ public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
         var validationResult = await _validator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
         {
-            return validationResult.ToList();
+            return validationResult.ToListError();
         }
 
          // Создание Value Objects
@@ -52,14 +53,14 @@ public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
         var existingByName = await _locationsRepository.GetByNameAsync(name, cancellationToken);
         if (existingByName != null)
         {
-            return LocationErrors.NameConflict(name.Value).ToErrors();
+            return LocationApplicationErrors.AlreadyExistsByName(name.Value).ToErrors();
         }
 
         // Нельзя создавать локацию на адресе, если такой уже занят
         var existingLocation = await _locationsRepository.GetByAddressAsync(address, cancellationToken);
         if (existingLocation != null)
         {
-            return LocationErrors.AddressConflict(address.ToString()).ToErrors();
+            return LocationApplicationErrors.AlreadyExistsByAddress(address.ToString()).ToErrors();
         }
 
         // создание сущности Location

@@ -1,8 +1,12 @@
-﻿using CSharpFunctionalExtensions;
+﻿using System.Text.RegularExpressions;
+using CSharpFunctionalExtensions;
+using DirectoryService.Domain.Positions.Errors;
+using Shared;
+using Shared.Extensions;
 
 namespace DirectoryService.Domain.Positions.ValueObjects;
 
-public record PositionName
+public partial record PositionName
 {
 
     private PositionName(string value)
@@ -12,19 +16,25 @@ public record PositionName
 
     public string Value { get; }
 
-    public static Result<PositionName> Create(string value)
+    public static Result<PositionName, Error> Create(string name)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return Result.Failure<PositionName>("Name cannot be empty");
+        if (string.IsNullOrWhiteSpace(name))
+            return PositionDomainErrors.Name.Empty();
 
-        if (value.Length < LengthConstants.LENGTH3)
-            return Result.Failure<PositionName>($"Name must be at least {LengthConstants.LENGTH3} characters long");
+        string normalized = name.NormalizeSpaces();
 
-        if (value.Length > LengthConstants.LENGTH100)
-            return Result.Failure<PositionName>($"Name must be less than {LengthConstants.LENGTH100} characters long");
+        if (normalized.Length < LengthConstants.LENGTH3)
+            return PositionDomainErrors.Name.TooShort(LengthConstants.LENGTH3);
 
-        return Result.Success(new PositionName(value));
+        if (normalized.Length > LengthConstants.LENGTH100)
+            return PositionDomainErrors.Name.TooLong(LengthConstants.LENGTH100);
+
+        return new PositionName(normalized);
     }
 
     public override string ToString() => Value;
+
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex SpaceRemoveRegex();
 }
+

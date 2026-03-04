@@ -9,7 +9,6 @@ public class CreateLocationValidator: AbstractValidator<CreateLocationCommand>
 {
     public CreateLocationValidator()
     {
-        // пока только название
         RuleFor(l => l.Request.Name)
             .MustBeValueObject(LocationName.Create);
 
@@ -23,5 +22,7 @@ public class CreateLocationValidator: AbstractValidator<CreateLocationCommand>
 
         RuleFor(l => l.Request.Timezone)
             .MustBeValueObject(LocationTimeZone.Create);
+
+        // не пустой список и без дубликатов!!!
     }
 }

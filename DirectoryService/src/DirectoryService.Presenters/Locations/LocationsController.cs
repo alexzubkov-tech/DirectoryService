@@ -1,5 +1,6 @@
 ﻿using DirectoryService.Application.Abstractions;
 using DirectoryService.Application.Locations.Create;
+using DirectoryService.Application.Locations.GetAll;
 using DirectoryService.Contracts.Locations;
 using DirectoryService.Presenters.Controllers;
 using DirectoryService.Presenters.ResponseExtensions;
@@ -23,6 +24,18 @@ public class LocationsController: ApplicationController
         var result = await handler.Handle(command, cancellationToken);
 
         return result.IsFailure ? result.Error.ToResponse() : Ok(result.Value);
-
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        [FromServices] IQueryHandler<IReadOnlyList<LocationDto>, GetAllLocationsQuery> handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.Handle(new GetAllLocationsQuery(), cancellationToken);
+
+        return result.IsFailure
+            ? result.Error.ToResponse()
+            : Ok(result.Value);
+    }
+
 }

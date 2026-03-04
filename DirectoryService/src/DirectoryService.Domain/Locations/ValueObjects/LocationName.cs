@@ -19,21 +19,17 @@ public partial record LocationName
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            return LocationNameErrors.Empty();
+            return LocationDomainErrors.Name.Empty();
         }
 
         string normalized = name.NormalizeSpaces();
 
         if (normalized.Length < LengthConstants.LENGTH3)
-            return LocationNameErrors.TooShort(LengthConstants.LENGTH3);
+            return LocationDomainErrors.Name.TooShort(LengthConstants.LENGTH3);
 
         if (normalized.Length > LengthConstants.LENGTH120)
-            return LocationNameErrors.TooLong(LengthConstants.LENGTH120);
+            return LocationDomainErrors.Name.TooLong(LengthConstants.LENGTH120);
 
         return new LocationName(normalized);
     }
-
-    [GeneratedRegex(@"\s+")]
-    private static partial Regex SpaceRemoveRegex();
-
 }

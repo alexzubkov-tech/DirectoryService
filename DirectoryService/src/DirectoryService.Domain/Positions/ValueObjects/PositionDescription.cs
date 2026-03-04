@@ -1,8 +1,12 @@
-﻿using CSharpFunctionalExtensions;
+﻿using System.Text.RegularExpressions;
+using CSharpFunctionalExtensions;
+using DirectoryService.Domain.Positions.Errors;
+using Shared;
+using Shared.Extensions;
 
 namespace DirectoryService.Domain.Positions.ValueObjects;
 
-public record PositionDescription
+public partial record PositionDescription
 {
     private PositionDescription(string? value)
     {
@@ -11,14 +15,19 @@ public record PositionDescription
 
     public string? Value { get; }
 
-    public static Result<PositionDescription> Create(string? value)
+    public static Result<PositionDescription, Error> Create(string? value)
     {
-        if (value != null && value.Length > LengthConstants.LENGTH1000)
+        string? normalized = value?.NormalizeSpaces();
+
+        if (normalized != null && normalized.Length > LengthConstants.LENGTH1000)
         {
-            return Result.Failure<PositionDescription>(
-                $"Description must be less than {LengthConstants.LENGTH1000} characters long");
+            return PositionDomainErrors.Description.TooLong(LengthConstants.LENGTH1000);
         }
 
-        return Result.Success(new PositionDescription(value));
+        return new PositionDescription(normalized);
     }
+
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex SpaceRemoveRegex();
+
 }

@@ -25,7 +25,7 @@ public sealed record LocationTimeZone
 
         if (!TimeZoneInfo.TryFindSystemTimeZoneById(normalized, out _))
         {
-           return LocationTimeZoneErrors.Invalid(normalized);
+            return LocationDomainErrors.TimeZone.Invalid(normalized);
         }
 
         return new LocationTimeZone(normalized);
