@@ -6,7 +6,7 @@ namespace DirectoryService.Application.Validation;
 
 public static class ValidationExtensions
 {
-    public static Errors ToList(this ValidationResult validationResult)
+    public static Errors ToListError(this ValidationResult validationResult)
     {
         var validationErrors = validationResult.Errors;
 

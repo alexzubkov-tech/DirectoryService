@@ -128,6 +128,10 @@ namespace DirectoryService.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_department");
 
+                    b.HasIndex("DepartmentIdentifier")
+                        .IsUnique()
+                        .HasDatabaseName("ix_department_identifier");
+
                     b.HasIndex("ParentId");
 
                     b.ToTable("departments", (string)null);
@@ -216,7 +220,9 @@ namespace DirectoryService.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PositionName")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_positions_name_active")
+                        .HasFilter("\"is_active\" = true");
 
                     b.ToTable("positions", (string)null);
                 });

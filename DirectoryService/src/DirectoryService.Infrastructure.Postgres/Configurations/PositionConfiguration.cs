@@ -28,7 +28,9 @@ public class PositionConfiguration: IEntityTypeConfiguration<Position>
             .HasMaxLength(LengthConstants.LENGTH100);
 
         builder.HasIndex(p => p.PositionName)
-            .IsUnique();
+            .HasDatabaseName("ix_positions_name_active")
+            .IsUnique()
+            .HasFilter("\"is_active\" = true");
 
         builder.Property(p => p.PositionDescription)
             .HasConversion(

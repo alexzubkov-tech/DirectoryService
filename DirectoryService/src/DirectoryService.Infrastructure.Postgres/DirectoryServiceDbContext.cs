@@ -12,7 +12,6 @@ public class DirectoryServiceDbContext: DbContext
     public DirectoryServiceDbContext(DbContextOptions<DirectoryServiceDbContext> options)
         : base(options)
     {
-        
     }
 
     public DbSet<Department> Departments => Set<Department>();

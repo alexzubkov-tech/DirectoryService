@@ -1,31 +1,39 @@
 ﻿using System.Text.RegularExpressions;
 using CSharpFunctionalExtensions;
+using DirectoryService.Domain.Departments.Errors;
 using Shared;
+using Shared.Extensions;
 
 namespace DirectoryService.Domain.Departments.ValueObjects;
 
 public record DepartmentIdentifier
 {
-    private static readonly Regex LatinRegex = new(@"^[a-zA-Z]+$", RegexOptions.Compiled);
+    // Разрешены: латинские буквы и дефис
+    private static readonly Regex AllowedCharsRegex = new(@"^[a-zA-Z-]+$", RegexOptions.Compiled);
 
-    private DepartmentIdentifier(string value)
-    {
-        Value = value;
-    }
+    // Для замены любых последовательностей пробельных символов на дефис
+    private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
+
+    private DepartmentIdentifier(string value) => Value = value;
 
     public string Value { get; }
 
     public static Result<DepartmentIdentifier, Error> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-            return GeneralErrors.ValueIsRequired("identifier");
+            return DepartmentDomainErrors.Identifier.Empty();
 
-        if (LatinRegex.IsMatch(value) == false)
-            return GeneralErrors.ValueIsInvalid("identifier"); 
+        string normalized = WhitespaceRegex.Replace(value.Trim(), "-");
 
-        if (value.Length is < LengthConstants.LENGTH3 or > LengthConstants.LENGTH150)
-            return GeneralErrors.ValueIsInvalid("identifier");
+        if (string.IsNullOrEmpty(normalized))
+            return DepartmentDomainErrors.Identifier.Empty();
 
-        return new DepartmentIdentifier(value);
+        if (normalized.Length < LengthConstants.LENGTH3 || normalized.Length > LengthConstants.LENGTH150)
+            return DepartmentDomainErrors.Identifier.InvalidLength(LengthConstants.LENGTH3, LengthConstants.LENGTH150);
+
+        if (!AllowedCharsRegex.IsMatch(normalized))
+            return DepartmentDomainErrors.Identifier.InvalidFormat();
+
+        return new DepartmentIdentifier(normalized);
     }
 }

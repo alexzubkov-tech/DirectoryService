@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using DirectoryService.Domain.Departments.Errors;
 using Shared;
 
 namespace DirectoryService.Domain.Departments.ValueObjects;
@@ -16,10 +17,13 @@ public record DepartmentName
     public static Result<DepartmentName, Error> Create(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
-            return GeneralErrors.ValueIsRequired("department_name");
+            return DepartmentDomainErrors.Name.Empty();
 
-        if (value.Length is < LengthConstants.LENGTH3 or > LengthConstants.LENGTH150)
-            return GeneralErrors.ValueIsInvalid("department_name");
+        if (value.Length < LengthConstants.LENGTH3)
+            return DepartmentDomainErrors.Name.TooShort(LengthConstants.LENGTH3);
+
+        if (value.Length > LengthConstants.LENGTH150)
+            return DepartmentDomainErrors.Name.TooLong(LengthConstants.LENGTH150);
 
         return new DepartmentName(value);
     }

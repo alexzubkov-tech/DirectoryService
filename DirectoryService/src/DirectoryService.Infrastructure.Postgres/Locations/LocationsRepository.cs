@@ -1,8 +1,9 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Locations;
+using DirectoryService.Application.Locations.Fails;
 using DirectoryService.Domain.Locations;
-using DirectoryService.Domain.Locations.Errors;
 using DirectoryService.Domain.Locations.ValueObjects;
+using DirectoryService.Infrastructure.Locations.Errors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -32,30 +33,21 @@ public class LocationsRepository: ILocationsRepository
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx)
         {
-            if (pgEx is { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: not null }
-                && pgEx.ConstraintName.Contains("ix_locations_name", StringComparison.InvariantCultureIgnoreCase))
+            if (pgEx.SqlState == PostgresErrorCodes.UniqueViolation &&
+                pgEx.ConstraintName?.Contains("ix_locations_name", StringComparison.InvariantCultureIgnoreCase) == true)
             {
-                return LocationErrors.NameConflict(location.LocationName.Value);
+                return LocationApplicationErrors.AlreadyExistsByName(location.LocationName.Value);
             }
 
             _logger.LogError(ex, "Database update error while creating location with name {locationName}",
                 location.LocationName.Value);
-
-            return LocationErrors.DatabaseError();
-        }
-        catch (OperationCanceledException ex)
-        {
-            _logger.LogError(ex, "Operation was canceled while creating location with name {locationName}",
-                location.LocationName.Value);
-            return LocationErrors.OperationCancelled();
+            return LocationInfrastructureErrors.DatabaseError();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error while creating location with name {locationName}",
                 location.LocationName.Value);
-
-            return LocationErrors.DatabaseError();
-
+            return LocationInfrastructureErrors.DatabaseError();
         }
     }
 
@@ -63,11 +55,7 @@ public class LocationsRepository: ILocationsRepository
     {
         return await _dbContext.Locations
             .FirstOrDefaultAsync(
-                l =>
-                    l.LocationAddress.Country == address.Country &&
-                    l.LocationAddress.City == address.City &&
-                    l.LocationAddress.Street == address.Street &&
-                    l.LocationAddress.BuildingNumber == address.BuildingNumber,
+                l => l.LocationAddress == address,
                 cancellationToken);
     }
 
@@ -75,5 +63,33 @@ public class LocationsRepository: ILocationsRepository
     {
         return await _dbContext.Locations
             .FirstOrDefaultAsync(l => l.LocationName == name, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Location>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Locations
+            .IgnoreQueryFilters()
+            .AsNoTracking().ToListAsync(cancellationToken);
+    }
+
+    // игнорирую фильтр, чтобы конкретизировать ошибку - локация не найдена либо не активна
+    public async Task<Location?> GetByIdAsync(Guid locationId, CancellationToken cancellationToken)
+    {
+        var id = new LocationId(locationId);
+        return await _dbContext.Locations
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+    }
+
+    public async Task<List<Location>> GetListByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    {
+        var locationIds = ids
+            .Select(id => new LocationId(id))
+            .ToList();
+
+        return await _dbContext.Locations
+            .IgnoreQueryFilters()
+            .Where(l => locationIds.Contains(l.Id))
+            .ToListAsync(cancellationToken);
     }
 }

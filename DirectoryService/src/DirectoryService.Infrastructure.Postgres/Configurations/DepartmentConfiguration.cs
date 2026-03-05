@@ -37,6 +37,10 @@ public class DepartmentConfiguration: IEntityTypeConfiguration<Department>
             .HasColumnName("department_identifier")
             .HasMaxLength(LengthConstants.LENGTH150);
 
+        builder.HasIndex(d => d.DepartmentIdentifier)
+            .HasDatabaseName("ix_department_identifier")
+            .IsUnique();
+
         builder.Property(d => d.ParentId)
             .HasColumnName("parent_id")
             .IsRequired(false)

@@ -10,4 +10,11 @@ public sealed class DepartmentPosition
     public PositionId PositionId { get; private set; }
 
     public DepartmentId DepartmentId { get; private set; }
+
+    public DepartmentPosition(PositionId positionId, DepartmentId departmentId)
+    {
+        Id = new DepartmentPositionId(Guid.NewGuid());
+        PositionId = positionId;
+        DepartmentId = departmentId;
+    }
 }
