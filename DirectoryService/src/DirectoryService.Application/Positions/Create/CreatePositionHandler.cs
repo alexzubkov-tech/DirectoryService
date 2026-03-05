@@ -44,7 +44,7 @@ public class CreatePositionHandler: ICommandHandler<Guid, CreatePositionCommand>
         var description = PositionDescription.Create(command.Request.Description).Value;
 
         // 3. Бизнес-валидация: уникальность имени среди всех активных позиций
-        var existingPosition = await _positionsRepository.GetByNameAsync(name.Value, cancellationToken);
+        var existingPosition = await _positionsRepository.GetByNameAsync(name, cancellationToken);
         if (existingPosition != null && existingPosition.IsActive)
             return PositionApplicationErrors.NameAlreadyExists(name.Value).ToErrors();
 
@@ -79,13 +79,16 @@ public class CreatePositionHandler: ICommandHandler<Guid, CreatePositionCommand>
         IEnumerable<Guid> departmentIds,
         CancellationToken cancellationToken)
     {
+        var existingDepartments = await _departmentsRepository.GetListByIdsAsync(departmentIds, cancellationToken);
+
+        var departmentsDict = existingDepartments.ToDictionary(d => d.Id.Value);
+
         var errors = new List<Error>();
         var validIds = new List<Guid>();
 
         foreach (var id in departmentIds)
         {
-            var department = await _departmentsRepository.GetByIdAsync(id, cancellationToken);
-            if (department == null)
+            if (!departmentsDict.TryGetValue(id, out var department))
             {
                 errors.Add(DepartmentApplicationErrors.NotFound(id));
                 continue;

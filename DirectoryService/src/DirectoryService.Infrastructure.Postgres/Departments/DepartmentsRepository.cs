@@ -64,13 +64,6 @@ public class DepartmentsRepository: IDepartmentsRepository
         }
     }
 
-     public async Task<bool> ExistsAsync(Guid departmentId, CancellationToken cancellationToken)
-    {
-        var id = new DepartmentId(departmentId);
-        return await _dbContext.Departments
-            .AnyAsync(d => d.Id == id, cancellationToken);
-    }
-
      public async Task<Department?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         var departmentId = new DepartmentId(id);
@@ -79,9 +72,22 @@ public class DepartmentsRepository: IDepartmentsRepository
             .FirstOrDefaultAsync(d => d.Id == departmentId, ct);
     }
 
-     public async Task<bool> ExistsByIdentifierAsync(DepartmentIdentifier identifier, CancellationToken cancellationToken)
+     public async Task<List<Department>> GetListByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    {
+        var departmentIds = ids
+            .Select(id => new DepartmentId(id))
+            .ToList();
+
+        return await _dbContext.Departments
+            .IgnoreQueryFilters()
+            .Where(d => departmentIds.Contains(d.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+     public async Task<Department?> GetByIdentifierAsync(DepartmentIdentifier identifier, CancellationToken cancellationToken)
     {
         return await _dbContext.Departments
-            .AnyAsync(d => d.DepartmentIdentifier == identifier, cancellationToken);
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(d => d.DepartmentIdentifier == identifier, cancellationToken);
     }
 }

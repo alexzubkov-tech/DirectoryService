@@ -12,16 +12,15 @@ public interface IDepartmentsRepository
         Department department,
         CancellationToken cancellationToken = default);
 
-    Task<bool> ExistsAsync(
-        Guid locationId,
-        CancellationToken cancellationToken);
-
     Task<Department?> GetByIdAsync(
         Guid id,
         CancellationToken ct);
 
-    Task<bool> ExistsByIdentifierAsync(
+    Task<Department?> GetByIdentifierAsync(
         DepartmentIdentifier identifier,
         CancellationToken cancellationToken);
 
+    Task<List<Department>> GetListByIdsAsync(
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken);
 }

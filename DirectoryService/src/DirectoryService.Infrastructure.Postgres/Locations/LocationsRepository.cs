@@ -2,7 +2,6 @@
 using DirectoryService.Application.Locations;
 using DirectoryService.Application.Locations.Fails;
 using DirectoryService.Domain.Locations;
-using DirectoryService.Domain.Locations.Errors;
 using DirectoryService.Domain.Locations.ValueObjects;
 using DirectoryService.Infrastructure.Locations.Errors;
 using Microsoft.EntityFrameworkCore;
@@ -80,5 +79,17 @@ public class LocationsRepository: ILocationsRepository
         return await _dbContext.Locations
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+    }
+
+    public async Task<List<Location>> GetListByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    {
+        var locationIds = ids
+            .Select(id => new LocationId(id))
+            .ToList();
+
+        return await _dbContext.Locations
+            .IgnoreQueryFilters()
+            .Where(l => locationIds.Contains(l.Id))
+            .ToListAsync(cancellationToken);
     }
 }

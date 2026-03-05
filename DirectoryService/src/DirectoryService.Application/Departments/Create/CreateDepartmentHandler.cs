@@ -46,10 +46,8 @@ public class CreateDepartmentHandler: ICommandHandler<Guid, CreateDepartmentComm
         var identifier = DepartmentIdentifier.Create(command.Request.Identifier).Value;
 
         // 3. Проверка уникальности идентификатора
-        bool exists = await _departmentsRepository
-            .ExistsByIdentifierAsync(identifier, cancellationToken);
-
-        if (exists)
+        var existingDepartment = await _departmentsRepository.GetByIdentifierAsync(identifier, cancellationToken);
+        if (existingDepartment != null)
         {
             return DepartmentApplicationErrors
                 .IdentifierAlreadyExists(identifier.Value)
@@ -89,7 +87,9 @@ public class CreateDepartmentHandler: ICommandHandler<Guid, CreateDepartmentComm
         var department = departmentResult.Value;
 
         // 6. Сохранение в репозитории
-        await _departmentsRepository.AddAsync(department, cancellationToken);
+        var addResult = await _departmentsRepository.AddAsync(department, cancellationToken);
+        if (addResult.IsFailure)
+            return addResult.Error.ToErrors();
 
         // 7. Логирование
         _logger.LogInformation(
@@ -104,13 +104,16 @@ public class CreateDepartmentHandler: ICommandHandler<Guid, CreateDepartmentComm
         IEnumerable<Guid> locationIds,
         CancellationToken cancellationToken)
     {
+        var existingLocations = await _locationsRepository.GetListByIdsAsync(locationIds, cancellationToken);
+
+        var locationsDict = existingLocations.ToDictionary(l => l.Id.Value);
+
         var errors = new List<Error>();
         var validIds = new List<Guid>();
 
         foreach (var id in locationIds)
         {
-            var location = await _locationsRepository.GetByIdAsync(id, cancellationToken);
-            if (location is null)
+            if (!locationsDict.TryGetValue(id, out var location))
             {
                 errors.Add(LocationApplicationErrors.NotFound(id));
                 continue;
