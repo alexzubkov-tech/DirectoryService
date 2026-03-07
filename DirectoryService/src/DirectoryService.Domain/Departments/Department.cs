@@ -114,6 +114,19 @@ public sealed class Department
         return new Department(id, parent.Id, name, identifier, path, (short)(parent.Depth + 1), departmentLocations);
     }
 
+    public UnitResult<Error> UpdateLocations(List<LocationId> locationIds)
+    {
+        var departmentLocations = locationIds
+            .Select(id => new DepartmentLocation(Id, id))
+            .ToList();
+
+        _departmentLocations.AddRange(departmentLocations);
+
+        UpdatedAt = DateTime.UtcNow;
+
+        return UnitResult.Success<Error>();
+    }
+
 
     public void Deactivate()
     {

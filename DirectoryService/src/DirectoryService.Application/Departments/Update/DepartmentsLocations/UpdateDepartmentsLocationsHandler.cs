@@ -1,0 +1,114 @@
+﻿using CSharpFunctionalExtensions;
+using DirectoryService.Application.Abstractions;
+using DirectoryService.Application.Database;
+using DirectoryService.Application.Departments.Fails;
+using DirectoryService.Application.ReferenceValidation;
+using DirectoryService.Application.Validation;
+using DirectoryService.Domain.Departments.ValueObjects;
+using DirectoryService.Domain.Locations.ValueObjects;
+using FluentValidation;
+using Microsoft.Extensions.Logging;
+using Shared;
+
+namespace DirectoryService.Application.Departments.Update.DepartmentsLocations;
+
+public class UpdateDepartmentsLocationsHandler: ICommandHandler<Guid, UpdateDepartmentsLocationsCommand>
+{
+    private readonly IValidator<UpdateDepartmentsLocationsCommand> _validator;
+    private readonly IReferenceValidator _referenceValidator;
+    private readonly IDepartmentsRepository _departmentsRepository;
+    private readonly ILogger<UpdateDepartmentsLocationsHandler> _logger;
+    private readonly ITransactionManager _transactionManager;
+
+
+    public UpdateDepartmentsLocationsHandler(
+        IValidator<UpdateDepartmentsLocationsCommand> validator,
+        IDepartmentsRepository departmentsRepository,
+        ILogger<UpdateDepartmentsLocationsHandler> logger,
+        ITransactionManager transactionManager, IReferenceValidator referenceValidator)
+    {
+        _validator = validator;
+        _referenceValidator = referenceValidator;
+        _departmentsRepository = departmentsRepository;
+        _logger = logger;
+        _transactionManager = transactionManager;
+    }
+
+    public async Task<Result<Guid, Errors>> Handle(
+        UpdateDepartmentsLocationsCommand command,
+        CancellationToken cancellationToken)
+    {
+        // валидация входных данных
+        var validationResult = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validationResult.IsValid)
+            return validationResult.ToListError();
+
+        var transactionScopedResult = await _transactionManager.BeginTransactionAsync(cancellationToken);
+        if (transactionScopedResult.IsFailure)
+        {
+            return transactionScopedResult.Error.ToErrors();
+        }
+
+        using var transactionScope = transactionScopedResult.Value;
+        // бизнес вадидация
+
+        // существует ли такой Department и активен
+        var departmentResult = await _departmentsRepository.GetByIdAsync(command.Request.DepartmentId, cancellationToken);
+        if (departmentResult.IsFailure)
+        {
+            transactionScope.Rollback();
+            return departmentResult.Error.ToErrors();
+        }
+
+        var department = departmentResult.Value;
+
+        if (!department.IsActive)
+        {
+            transactionScope.Rollback();
+            return DepartmentApplicationErrors.Inactive(department.Id.Value).ToErrors();
+        }
+
+        // локации существуют и уникальны
+        var validLocationIdsResult =
+            await _referenceValidator.ExistAndActiveLocationsAsync(
+                command.Request.LocationIds,
+                cancellationToken);
+
+        if (validLocationIdsResult.IsFailure)
+        {
+            transactionScope.Rollback();
+            return validLocationIdsResult.Error;
+        }
+
+        var validLocationIds = validLocationIdsResult.Value
+            .Select(id => new LocationId(id))
+            .ToList();
+
+        // обновление
+        await _departmentsRepository.DeleteLocationsByDepartmentIdAsync(
+            new DepartmentId(command.Request.DepartmentId),
+            cancellationToken);
+
+        department.UpdateLocations(validLocationIds);
+
+        // сохранение в репозитории
+        var saveResult = await _transactionManager.SaveChangesAsync(cancellationToken);
+        if (saveResult.IsFailure)
+        {
+            transactionScope.Rollback();
+            return saveResult.Error.ToErrors();
+        }
+
+        var commitedResult = transactionScope.Commit();
+
+        if (commitedResult.IsFailure)
+        {
+            return commitedResult.Error.ToErrors();
+        }
+
+        // логирование
+        _logger.LogInformation("Departments locations update successful");
+
+        return department.Id.Value;
+    }
+}
