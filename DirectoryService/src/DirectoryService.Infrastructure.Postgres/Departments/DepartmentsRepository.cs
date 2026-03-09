@@ -64,12 +64,19 @@ public class DepartmentsRepository: IDepartmentsRepository
         }
     }
 
-     public async Task<Department?> GetByIdAsync(Guid id, CancellationToken ct)
+     public async Task<Result<Department, Error>> GetByIdAsync(Guid id, CancellationToken ct)
     {
         var departmentId = new DepartmentId(id);
-        return await _dbContext.Departments
+        var department = await _dbContext.Departments
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(d => d.Id == departmentId, ct);
+
+        if (department is null)
+        {
+            return Error.NotFound("department.not.found", "department not found", id );
+        }
+
+        return department;
     }
 
      public async Task<List<Department>> GetListByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
@@ -83,6 +90,17 @@ public class DepartmentsRepository: IDepartmentsRepository
             .Where(d => departmentIds.Contains(d.Id))
             .ToListAsync(cancellationToken);
     }
+
+     public async Task<UnitResult<Error>> DeleteLocationsByDepartmentIdAsync(
+         DepartmentId departmentId,
+         CancellationToken cancellationToken)
+     {
+         await _dbContext.DepartmentLocations
+             .Where(dl => dl.DepartmentId == departmentId)
+             .ExecuteDeleteAsync(cancellationToken);
+
+         return UnitResult.Success<Error>();
+     }
 
      public async Task<Department?> GetByIdentifierAsync(DepartmentIdentifier identifier, CancellationToken cancellationToken)
     {

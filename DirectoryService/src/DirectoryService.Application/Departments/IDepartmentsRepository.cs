@@ -12,7 +12,7 @@ public interface IDepartmentsRepository
         Department department,
         CancellationToken cancellationToken = default);
 
-    Task<Department?> GetByIdAsync(
+    Task<Result<Department, Error>> GetByIdAsync(
         Guid id,
         CancellationToken ct);
 
@@ -22,5 +22,9 @@ public interface IDepartmentsRepository
 
     Task<List<Department>> GetListByIdsAsync(
         IEnumerable<Guid> ids,
+        CancellationToken cancellationToken);
+
+    Task<UnitResult<Error>> DeleteLocationsByDepartmentIdAsync(
+        DepartmentId departmentId,
         CancellationToken cancellationToken);
 }

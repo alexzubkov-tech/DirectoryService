@@ -2,7 +2,7 @@
 using DirectoryService.Application.Abstractions;
 using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Application.Locations;
-using DirectoryService.Application.Locations.Fails;
+using DirectoryService.Application.ReferenceValidation;
 using DirectoryService.Application.Validation;
 using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Departments.ValueObjects;
@@ -16,19 +16,19 @@ namespace DirectoryService.Application.Departments.Create;
 public class CreateDepartmentHandler: ICommandHandler<Guid, CreateDepartmentCommand>
 {
     private readonly IValidator<CreateDepartmentCommand> _validator;
+    private readonly IReferenceValidator _referenceValidator;
     private readonly IDepartmentsRepository _departmentsRepository;
-    private readonly ILocationsRepository _locationsRepository;
     private readonly ILogger<CreateDepartmentHandler> _logger;
 
     public CreateDepartmentHandler(
         IValidator<CreateDepartmentCommand> validator,
+        IReferenceValidator referenceValidator,
         IDepartmentsRepository departmentsRepository,
-        ILocationsRepository locationsRepository,
         ILogger<CreateDepartmentHandler> logger)
     {
         _validator = validator;
+        _referenceValidator = referenceValidator;
         _departmentsRepository = departmentsRepository;
-        _locationsRepository = locationsRepository;
         _logger = logger;
     }
 
@@ -55,7 +55,11 @@ public class CreateDepartmentHandler: ICommandHandler<Guid, CreateDepartmentComm
         }
 
         // 4. Проверка локаций: существуют и активны
-        var validLocationIdsResult = await ExistAndActiveLocationAsync(command.Request.LocationIds, cancellationToken);
+        var validLocationIdsResult =
+            await _referenceValidator.ExistAndActiveLocationsAsync(
+                command.Request.LocationIds,
+                cancellationToken);
+
         if (validLocationIdsResult.IsFailure)
             return validLocationIdsResult.Error;
 
@@ -71,14 +75,28 @@ public class CreateDepartmentHandler: ICommandHandler<Guid, CreateDepartmentComm
         }
         else
         {
-            var parent = await _departmentsRepository.GetByIdAsync(command.Request.ParentId.Value, cancellationToken);
-            if (parent is null)
-                return DepartmentApplicationErrors.ParentNotFound(command.Request.ParentId.Value).ToErrors();
+            var parentResult =
+                await _departmentsRepository.GetByIdAsync(
+                    command.Request.ParentId.Value,
+                    cancellationToken);
+
+            if (parentResult.IsFailure)
+                return parentResult.Error.ToErrors();
+
+            var parent = parentResult.Value;
 
             if (!parent.IsActive)
-                return DepartmentApplicationErrors.ParentInactive(command.Request.ParentId.Value).ToErrors();
+            {
+                return DepartmentApplicationErrors
+                    .ParentInactive(command.Request.ParentId.Value)
+                    .ToErrors();
+            }
 
-            departmentResult = Department.CreateChild(name, identifier, parent, validLocationIds);
+            departmentResult = Department.CreateChild(
+                name,
+                identifier,
+                parent,
+                validLocationIds);
         }
 
         if (departmentResult.IsFailure)
@@ -98,39 +116,5 @@ public class CreateDepartmentHandler: ICommandHandler<Guid, CreateDepartmentComm
             department.DepartmentPath.Value);
 
         return department.Id.Value;
-    }
-
-    private async Task<Result<IReadOnlyList<Guid>, Errors>> ExistAndActiveLocationAsync(
-        IEnumerable<Guid> locationIds,
-        CancellationToken cancellationToken)
-    {
-        var existingLocations = await _locationsRepository.GetListByIdsAsync(locationIds, cancellationToken);
-
-        var locationsDict = existingLocations.ToDictionary(l => l.Id.Value);
-
-        var errors = new List<Error>();
-        var validIds = new List<Guid>();
-
-        foreach (var id in locationIds)
-        {
-            if (!locationsDict.TryGetValue(id, out var location))
-            {
-                errors.Add(LocationApplicationErrors.NotFound(id));
-                continue;
-            }
-
-            if (!location.IsActive)
-            {
-                errors.Add(LocationApplicationErrors.Inactive(id));
-                continue;
-            }
-
-            validIds.Add(id);
-        }
-
-        if (errors.Any())
-            return new Errors(errors);
-
-        return validIds;
     }
 }

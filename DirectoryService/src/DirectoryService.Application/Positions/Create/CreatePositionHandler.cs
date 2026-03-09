@@ -1,8 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Abstractions;
 using DirectoryService.Application.Departments;
-using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Application.Positions.Fails;
+using DirectoryService.Application.ReferenceValidation;
 using DirectoryService.Application.Validation;
 using DirectoryService.Domain.Departments.ValueObjects;
 using DirectoryService.Domain.Positions;
@@ -15,21 +15,23 @@ namespace DirectoryService.Application.Positions.Create;
 
 public class CreatePositionHandler: ICommandHandler<Guid, CreatePositionCommand>
 {
-    private readonly ILogger<CreatePositionHandler> _logger;
+
     private readonly IValidator<CreatePositionCommand> _validator;
+    private readonly IReferenceValidator _referenceValidator;
     private readonly IPositionsRepository _positionsRepository;
-    private readonly IDepartmentsRepository _departmentsRepository;
+    private readonly ILogger<CreatePositionHandler> _logger;
 
     public CreatePositionHandler(
-        ILogger<CreatePositionHandler> logger,
+        IReferenceValidator referenceValidator,
         IValidator<CreatePositionCommand> validator,
         IPositionsRepository positionsRepository,
-        IDepartmentsRepository departmentsRepository)
+        ILogger<CreatePositionHandler> logger)
     {
-        _logger = logger;
         _validator = validator;
+        _referenceValidator = referenceValidator;
         _positionsRepository = positionsRepository;
-        _departmentsRepository = departmentsRepository;
+        _logger = logger;
+
     }
 
     public async Task<Result<Guid, Errors>> Handle(CreatePositionCommand command, CancellationToken cancellationToken)
@@ -49,7 +51,11 @@ public class CreatePositionHandler: ICommandHandler<Guid, CreatePositionCommand>
             return PositionApplicationErrors.NameAlreadyExists(name.Value).ToErrors();
 
         // 4. Проверка departments: существуют и активны
-        var validDepartmentIdsResult = await ExistAndActiveDepartmentsAsync(command.Request.DepartmentIds, cancellationToken);
+        var validDepartmentIdsResult =
+            await _referenceValidator.ExistAndActiveDepartmentsAsync(
+                command.Request.DepartmentIds,
+                cancellationToken);
+
         if (validDepartmentIdsResult.IsFailure)
             return validDepartmentIdsResult.Error;
 
@@ -73,39 +79,5 @@ public class CreatePositionHandler: ICommandHandler<Guid, CreatePositionCommand>
         _logger.LogInformation("Position {PositionId} created with name {Name}", position.Id.Value, name.Value);
 
         return position.Id.Value;
-    }
-
-    private async Task<Result<IReadOnlyList<Guid>, Errors>> ExistAndActiveDepartmentsAsync(
-        IEnumerable<Guid> departmentIds,
-        CancellationToken cancellationToken)
-    {
-        var existingDepartments = await _departmentsRepository.GetListByIdsAsync(departmentIds, cancellationToken);
-
-        var departmentsDict = existingDepartments.ToDictionary(d => d.Id.Value);
-
-        var errors = new List<Error>();
-        var validIds = new List<Guid>();
-
-        foreach (var id in departmentIds)
-        {
-            if (!departmentsDict.TryGetValue(id, out var department))
-            {
-                errors.Add(DepartmentApplicationErrors.NotFound(id));
-                continue;
-            }
-
-            if (!department.IsActive)
-            {
-                errors.Add(DepartmentApplicationErrors.Inactive(id));
-                continue;
-            }
-
-            validIds.Add(id);
-        }
-
-        if (errors.Any())
-            return new Errors(errors);
-
-        return validIds;
     }
 }

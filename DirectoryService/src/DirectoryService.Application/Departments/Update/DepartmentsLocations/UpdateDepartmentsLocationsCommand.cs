@@ -1,0 +1,6 @@
+﻿using DirectoryService.Application.Abstractions;
+using DirectoryService.Contracts.Departments;
+
+namespace DirectoryService.Application.Departments.Update.DepartmentsLocations;
+
+public record UpdateDepartmentsLocationsCommand(UpdateDepartmentsLocationsRequest Request) : ICommand;
