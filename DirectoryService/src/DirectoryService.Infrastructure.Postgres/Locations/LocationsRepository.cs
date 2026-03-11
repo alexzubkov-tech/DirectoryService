@@ -55,7 +55,10 @@ public class LocationsRepository: ILocationsRepository
     {
         return await _dbContext.Locations
             .FirstOrDefaultAsync(
-                l => l.LocationAddress == address,
+                l => l.LocationAddress.Country == address.Country &&
+                     l.LocationAddress.City == address.City &&
+                     l.LocationAddress.Street == address.Street &&
+                     l.LocationAddress.BuildingNumber == address.BuildingNumber,
                 cancellationToken);
     }
 

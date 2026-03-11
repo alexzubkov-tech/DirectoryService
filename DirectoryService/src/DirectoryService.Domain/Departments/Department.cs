@@ -127,6 +127,18 @@ public sealed class Department
         return UnitResult.Success<Error>();
     }
 
+    public void SetParent(DepartmentId? newParentId, DepartmentPath? newParentPath)
+    {
+        ParentId = newParentId;
+
+        DepartmentPath = newParentPath is null
+            ? DepartmentPath.Create(DepartmentIdentifier.Value)
+            : newParentPath.CreateChild(DepartmentIdentifier);
+
+        Depth = (short)(DepartmentPath.Value.Split('.').Length - 1);
+
+        UpdatedAt = DateTime.UtcNow;
+    }
 
     public void Deactivate()
     {

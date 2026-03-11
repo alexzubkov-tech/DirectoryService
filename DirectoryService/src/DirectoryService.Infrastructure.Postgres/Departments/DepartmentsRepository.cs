@@ -102,6 +102,111 @@ public class DepartmentsRepository: IDepartmentsRepository
          return UnitResult.Success<Error>();
      }
 
+     public async Task<Result<Department, Error>> GetByIdWithLock(
+         DepartmentId departmentId,
+         CancellationToken cancellationToken)
+     {
+         var department = await _dbContext.Departments
+             .FromSql($"SELECT * FROM departments WHERE department_id = {departmentId.Value} FOR UPDATE")
+             .IgnoreQueryFilters()
+             .FirstOrDefaultAsync(cancellationToken);
+
+         if (department is null)
+         {
+             return DepartmentApplicationErrors.NotFound(departmentId.Value);
+         }
+
+         return department;
+     }
+
+     public async Task<bool> IsDescendantAsync(
+         string candidateParentPath,
+         string departmentPath,
+         CancellationToken cancellationToken)
+     {
+         var sql = """
+                   SELECT (@candidate::ltree <@ @department::ltree) AS "Value"
+                   """;
+
+         return await _dbContext.Database
+             .SqlQueryRaw<bool>(
+                 sql,
+                 new NpgsqlParameter("candidate", candidateParentPath),
+                 new NpgsqlParameter("department", departmentPath))
+             .FirstOrDefaultAsync(cancellationToken);
+     }
+
+     public async Task<UnitResult<Error>> LockDescendantsAsync(
+         string rootPath,
+         CancellationToken cancellationToken)
+     {
+         var sql = """
+                   SELECT department_id
+                   FROM departments
+                   WHERE department_path <@ @rootPath::ltree
+                   AND department_path != @rootPath::ltree
+                   FOR UPDATE
+                   """;
+
+         try
+         {
+             await _dbContext.Database.ExecuteSqlRawAsync(
+                 sql,
+                 [new NpgsqlParameter("rootPath", rootPath)],
+                 cancellationToken);
+
+             return UnitResult.Success<Error>();
+         }
+         catch (Exception ex)
+         {
+             _logger.LogError(ex, "Failed to lock descendants for path {RootPath}", rootPath);
+             return DepartmentInfrastructureErrors.DatabaseError();
+         }
+     }
+
+     public async Task<UnitResult<Error>> UpdateDescendantsPathAsync(
+         string oldPath,
+         string newPath,
+         CancellationToken cancellationToken)
+     {
+         var sql = $"""
+                    UPDATE departments
+                    SET department_path =
+                            @newPath::ltree
+                            || subpath(department_path, nlevel(@oldPath::ltree)),
+                        depth =
+                            nlevel(
+                                @newPath::ltree
+                                || subpath(department_path, nlevel(@oldPath::ltree))
+                            ) - 1,
+                        updated_at = now()
+                    WHERE department_path <@ @oldPath::ltree
+                    AND department_path != @oldPath::ltree
+                    """;
+
+         try
+         {
+             await _dbContext.Database.ExecuteSqlRawAsync(
+                 sql,
+                 [
+                     new NpgsqlParameter("oldPath", oldPath),
+                     new NpgsqlParameter("newPath", newPath)
+                 ],
+                 cancellationToken);
+
+             return UnitResult.Success<Error>();
+         }
+         catch (Exception ex)
+         {
+             _logger.LogError(ex,
+                 "Failed to update descendants path from {OldPath} to {NewPath}",
+                 oldPath,
+                 newPath);
+
+             return DepartmentInfrastructureErrors.DatabaseError();
+         }
+     }
+
      public async Task<Department?> GetByIdentifierAsync(DepartmentIdentifier identifier, CancellationToken cancellationToken)
     {
         return await _dbContext.Departments
