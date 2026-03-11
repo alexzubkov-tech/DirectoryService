@@ -12,7 +12,7 @@ using Shared;
 
 namespace DirectoryService.Application.Departments.Update.DepartmentsLocations;
 
-public class UpdateDepartmentsLocationsHandler: ICommandHandler<Guid, UpdateDepartmentsLocationsCommand>
+public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartmentsLocationsCommand>
 {
     private readonly IValidator<UpdateDepartmentsLocationsCommand> _validator;
     private readonly IReferenceValidator _referenceValidator;
@@ -34,7 +34,7 @@ public class UpdateDepartmentsLocationsHandler: ICommandHandler<Guid, UpdateDepa
         _transactionManager = transactionManager;
     }
 
-    public async Task<Result<Guid, Errors>> Handle(
+    public async Task<UnitResult<Errors>> Handle(
         UpdateDepartmentsLocationsCommand command,
         CancellationToken cancellationToken)
     {
@@ -107,8 +107,8 @@ public class UpdateDepartmentsLocationsHandler: ICommandHandler<Guid, UpdateDepa
         }
 
         // логирование
-        _logger.LogInformation("Departments locations update successful");
+        _logger.LogInformation("Локации отдела успешно обновлены");
 
-        return department.Id.Value;
+        return UnitResult.Success<Errors>();
     }
 }

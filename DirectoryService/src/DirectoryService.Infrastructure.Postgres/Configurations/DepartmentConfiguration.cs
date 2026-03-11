@@ -48,12 +48,15 @@ public class DepartmentConfiguration: IEntityTypeConfiguration<Department>
                 value => value!.Value,
                 value => new DepartmentId(value));
 
-        builder.ComplexProperty(d => d.DepartmentPath, nb =>
-        {
-            nb.Property(n => n.Value)
-                .HasColumnName("department_path")
-                .IsRequired();
-        });
+        builder.Property(d => d.DepartmentPath)
+            .HasColumnName("department_path")
+            .HasColumnType("ltree")
+            .IsRequired()
+            .HasConversion(
+                value => value.Value,
+                value => DepartmentPath.Create(value));
+
+        builder.HasIndex(d => d.DepartmentPath).HasMethod("gist").HasDatabaseName("idx_department_path");
 
         builder.Property(d => d.Depth)
             .HasColumnName("depth");

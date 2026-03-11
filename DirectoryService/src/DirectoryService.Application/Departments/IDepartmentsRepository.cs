@@ -27,4 +27,22 @@ public interface IDepartmentsRepository
     Task<UnitResult<Error>> DeleteLocationsByDepartmentIdAsync(
         DepartmentId departmentId,
         CancellationToken cancellationToken);
+
+    Task<Result<Department, Error>> GetByIdWithLock(
+        DepartmentId departmentId,
+        CancellationToken cancellationToken);
+
+    Task<bool> IsDescendantAsync(
+        string candidateParentPath,
+        string departmentPath,
+        CancellationToken cancellationToken);
+
+    Task<UnitResult<Error>> LockDescendantsAsync(
+        string rootPath,
+        CancellationToken cancellationToken);
+
+    Task<UnitResult<Error>> UpdateDescendantsPathAsync(
+        string oldPath,
+        string newPath,
+        CancellationToken cancellationToken);
 }

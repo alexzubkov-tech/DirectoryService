@@ -1,5 +1,6 @@
 ﻿using DirectoryService.Application.Abstractions;
 using DirectoryService.Application.Departments.Create;
+using DirectoryService.Application.Departments.Update.DepartmentParent;
 using DirectoryService.Application.Departments.Update.DepartmentsLocations;
 using DirectoryService.Contracts.Departments;
 using DirectoryService.Presenters.Controllers;
@@ -27,7 +28,7 @@ public class DepartmentsController: ApplicationController
 
     [HttpPatch("{departmentId:guid}/locations")]
     public async Task<IActionResult> UpdateDepartmentsLocations(
-        [FromServices] ICommandHandler<Guid, UpdateDepartmentsLocationsCommand> handler,
+        [FromServices] ICommandHandler<UpdateDepartmentsLocationsCommand> handler,
         [FromBody] UpdateDepartmentsLocationsRequest request,
         CancellationToken cancellationToken)
     {
@@ -35,6 +36,19 @@ public class DepartmentsController: ApplicationController
 
         var result = await handler.Handle(command, cancellationToken);
 
-        return result.IsFailure ? result.Error.ToResponse() : Ok(result.Value);
+        return result.IsFailure ? result.Error.ToResponse() : Ok(null);
+    }
+
+    [HttpPatch("{departmentId:guid}/parent")]
+    public async Task<IActionResult> UpdateDepartmentParent(
+        [FromServices] ICommandHandler<UpdateDepartmentParentCommand> handler,
+        [FromBody] UpdateDepartmentParentRequest request,
+        CancellationToken cancellationToken)
+    {
+
+        var command = new UpdateDepartmentParentCommand(request);
+        var result = await handler.Handle(command, cancellationToken);
+
+        return result.IsFailure ? result.Error.ToResponse() : Ok(null);
     }
 }

@@ -12,12 +12,12 @@ public static class LocationDomainErrors
         public static Error TooShort(int min) =>
             Error.Validation(
                 "location.name.too.short",
-                $"Name must be at least {min} characters");
+                $"Название должно содержать не менее {min} символов");
 
         public static Error TooLong(int max) =>
             Error.Validation(
                 "location.name.too.long",
-                $"Name must be at most {max} characters");
+                $"Название должно содержать не более {max} символов");
     }
 
     public static class TimeZone
@@ -25,6 +25,6 @@ public static class LocationDomainErrors
         public static Error Invalid(string value) =>
             Error.Validation(
                 "location.timezone.invalid",
-                $"'{value}' is not a valid timezone");
+                $"'{value}' не является допустимым часовым поясом");
     }
 }

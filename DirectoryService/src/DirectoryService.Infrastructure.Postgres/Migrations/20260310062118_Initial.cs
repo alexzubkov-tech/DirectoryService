@@ -11,6 +11,9 @@ namespace DirectoryService.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AlterDatabase()
+                .Annotation("Npgsql:PostgresExtension:ltree", ",,");
+
             migrationBuilder.CreateTable(
                 name: "departments",
                 columns: table => new
@@ -19,7 +22,7 @@ namespace DirectoryService.Infrastructure.Migrations
                     department_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     department_identifier = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     parent_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    department_path = table.Column<string>(type: "text", nullable: false),
+                    department_path = table.Column<string>(type: "ltree", nullable: false),
                     depth = table.Column<short>(type: "smallint", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "timezone('utc', now())"),
@@ -74,8 +77,8 @@ namespace DirectoryService.Infrastructure.Migrations
                 columns: table => new
                 {
                     department_location_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    department_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    location_id = table.Column<Guid>(type: "uuid", nullable: false)
+                    location_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    department_id = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -85,13 +88,13 @@ namespace DirectoryService.Infrastructure.Migrations
                         column: x => x.department_id,
                         principalTable: "departments",
                         principalColumn: "department_id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_department_locations_locations_location_id",
                         column: x => x.location_id,
                         principalTable: "locations",
                         principalColumn: "location_id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -99,8 +102,8 @@ namespace DirectoryService.Infrastructure.Migrations
                 columns: table => new
                 {
                     department_position_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    department_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    position_id = table.Column<Guid>(type: "uuid", nullable: false)
+                    position_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    department_id = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -110,20 +113,19 @@ namespace DirectoryService.Infrastructure.Migrations
                         column: x => x.department_id,
                         principalTable: "departments",
                         principalColumn: "department_id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_department_positions_positions_position_id",
                         column: x => x.position_id,
                         principalTable: "positions",
                         principalColumn: "position_id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_department_locations_department_id_location_id",
+                name: "IX_department_locations_department_id",
                 table: "department_locations",
-                columns: new[] { "department_id", "location_id" },
-                unique: true);
+                column: "department_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_department_locations_location_id",
@@ -131,10 +133,9 @@ namespace DirectoryService.Infrastructure.Migrations
                 column: "location_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_department_positions_department_id_position_id",
+                name: "IX_department_positions_department_id",
                 table: "department_positions",
-                columns: new[] { "department_id", "position_id" },
-                unique: true);
+                column: "department_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_department_positions_position_id",
@@ -142,21 +143,34 @@ namespace DirectoryService.Infrastructure.Migrations
                 column: "position_id");
 
             migrationBuilder.CreateIndex(
+                name: "idx_department_path",
+                table: "departments",
+                column: "department_path")
+                .Annotation("Npgsql:IndexMethod", "gist");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_department_identifier",
+                table: "departments",
+                column: "department_identifier",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_departments_parent_id",
                 table: "departments",
                 column: "parent_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_locations_location_name",
+                name: "ix_locations_name",
                 table: "locations",
                 column: "location_name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_positions_position_name",
+                name: "ix_positions_name_active",
                 table: "positions",
                 column: "position_name",
-                unique: true);
+                unique: true,
+                filter: "\"is_active\" = true");
         }
 
         /// <inheritdoc />

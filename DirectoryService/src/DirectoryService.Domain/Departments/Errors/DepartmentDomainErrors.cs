@@ -4,6 +4,27 @@ namespace DirectoryService.Domain.Departments.Errors;
 
 public class DepartmentDomainErrors
 {
+
+    public static class Id
+    {
+        public static Error Empty() =>
+            Error.Validation(
+                code: "department.id.empty",
+                message: "Идентификатор отдела не может быть пустым (Guid.Empty).",
+                invalidField: "departmentId");
+
+        public static Error Null() =>
+            Error.Validation(
+                code: "department.id.null",
+                message: "Идентификатор отдела не может быть null.",
+                invalidField: "departmentId");
+
+        public static Error ParentIdEmpty() => Error.Validation(
+            code: "department.parent.id.empty",
+            message: "Идентификатор родительского отдела не может быть пустым (Guid.Empty).",
+            invalidField: "parentId");
+    }
+
     public static class Name
     {
         public static Error Empty() =>
@@ -12,13 +33,13 @@ public class DepartmentDomainErrors
         public static Error TooShort(int min) =>
             Error.Validation(
                 code: "department.name.too.short",
-                message: $"Department name must be at least {min} characters.",
+                message: $"Название отдела должно содержать не менее {min} символов.",
                 invalidField: "department_name");
 
         public static Error TooLong(int max) =>
             Error.Validation(
                 code: "department.name.too.long",
-                message: $"Department name must be at most {max} characters.",
+                message: $"Название отдела должно содержать не более {max} символов.",
                 invalidField: "department_name");
     }
 
@@ -30,13 +51,13 @@ public class DepartmentDomainErrors
         public static Error InvalidFormat() =>
             Error.Validation(
                 code: "department.identifier.invalid.format",
-                message: "Identifier must contain only latin letters and hyphens (spaces are replaced with hyphens",
+                message: "Идентификатор должен содержать только латинские буквы и дефисы (пробелы заменяются на дефисы).",
                 invalidField: "identifier");
 
         public static Error InvalidLength(int min, int max) =>
             Error.Validation(
                 code: "department.identifier.invalid.length",
-                message: $"Identifier must be between {min} and {max} characters.",
+                message: $"Идентификатор должен содержать от {min} до {max} символов.",
                 invalidField: "identifier");
     }
 
