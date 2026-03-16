@@ -4,7 +4,7 @@ using DirectoryService.Application.Database;
 using Microsoft.Extensions.Logging;
 using Shared;
 
-namespace DirectoryService.Infrastructure;
+namespace DirectoryService.Infrastructure.Database;
 
 
 public class TransactionScope : ITransactionScope
