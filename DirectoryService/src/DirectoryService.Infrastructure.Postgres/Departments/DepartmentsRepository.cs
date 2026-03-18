@@ -207,10 +207,14 @@ public class DepartmentsRepository: IDepartmentsRepository
          }
      }
 
-     public async Task<Department?> GetByIdentifierAsync(DepartmentIdentifier identifier, CancellationToken cancellationToken)
-    {
-        return await _dbContext.Departments
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(d => d.DepartmentIdentifier == identifier, cancellationToken);
-    }
+     public async Task<Department?> GetByIdentifierAsync(
+         DepartmentIdentifier identifier,
+         CancellationToken cancellationToken)
+     {
+         return await _dbContext.Departments
+             .IgnoreQueryFilters()
+             .FirstOrDefaultAsync(
+                 d => d.DepartmentIdentifier.Value == identifier.Value,
+                 cancellationToken);
+     }
 }

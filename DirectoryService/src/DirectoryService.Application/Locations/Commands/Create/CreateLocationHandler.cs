@@ -3,13 +3,12 @@ using DirectoryService.Application.Abstractions;
 using DirectoryService.Application.Locations.Fails;
 using DirectoryService.Application.Validation;
 using DirectoryService.Domain.Locations;
-using DirectoryService.Domain.Locations.Errors;
 using DirectoryService.Domain.Locations.ValueObjects;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 using Shared;
 
-namespace DirectoryService.Application.Locations.Create;
+namespace DirectoryService.Application.Locations.Commands.Create;
 
 public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
 {

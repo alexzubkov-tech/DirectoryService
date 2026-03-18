@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DirectoryService.Infrastructure.Configurations;
 
-public class PositionConfiguration: IEntityTypeConfiguration<Position>
+public class PositionConfiguration : IEntityTypeConfiguration<Position>
 {
     public void Configure(EntityTypeBuilder<Position> builder)
     {
@@ -21,45 +21,42 @@ public class PositionConfiguration: IEntityTypeConfiguration<Position>
                 value => value.Value,
                 value => new PositionId(value));
 
-        builder.Property(p => p.PositionName)
-            .HasConversion(pn => pn.Value, name => PositionName.Create(name).Value)
-            .IsRequired()
-            .HasColumnName("position_name")
-            .HasMaxLength(LengthConstants.LENGTH100);
+        builder.OwnsOne(p => p.PositionName, pn =>
+        {
+            pn.Property(x => x.Value)
+                .HasColumnName("position_name")
+                .HasMaxLength(LengthConstants.LENGTH100)
+                .IsRequired();
 
-        builder.HasIndex(p => p.PositionName)
-            .HasDatabaseName("ix_positions_name_active")
-            .IsUnique()
-            .HasFilter("\"is_active\" = true");
+            pn.HasIndex(x => x.Value)
+                .HasDatabaseName("ix_positions_name_active")
+                .IsUnique()
+                .HasFilter("\"is_active\" = true");
+        });
 
-        builder.Property(p => p.PositionDescription)
-            .HasConversion(
-                p => p.Value,
-                description => PositionDescription.Create(description).Value)
-            .IsRequired(false)
-            .HasColumnName("position_description")
-            .HasMaxLength(LengthConstants.LENGTH1000);
+        builder.OwnsOne(p => p.PositionDescription, pd =>
+        {
+            pd.Property(x => x.Value)
+                .HasColumnName("position_description")
+                .HasMaxLength(LengthConstants.LENGTH1000);
+        });
 
         builder.Property(p => p.IsActive)
             .HasColumnName("is_active")
-            .IsRequired()
             .HasDefaultValue(true);
 
         builder.HasQueryFilter(p => p.IsActive);
 
         builder.Property(p => p.CreatedAt)
             .HasColumnName("created_at")
-            .IsRequired()
             .HasDefaultValueSql("timezone('utc', now())");
 
         builder.Property(p => p.UpdatedAt)
             .HasColumnName("updated_at")
-            .IsRequired()
             .HasDefaultValueSql("timezone('utc', now())");
 
         builder.HasMany(p => p.DepartmentPositions)
             .WithOne()
             .HasForeignKey(d => d.PositionId);
-
     }
 }

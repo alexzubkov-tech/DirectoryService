@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DirectoryService.Infrastructure.Configurations;
 
-public class LocationConfiguration: IEntityTypeConfiguration<Location>
+public class LocationConfiguration : IEntityTypeConfiguration<Location>
 {
     public void Configure(EntityTypeBuilder<Location> builder)
     {
@@ -21,46 +21,46 @@ public class LocationConfiguration: IEntityTypeConfiguration<Location>
                 value => value.Value,
                 value => new LocationId(value));
 
-        builder.Property(l => l.LocationName)
-            .HasConversion(ln => ln.Value, name => LocationName.Create(name).Value)
-            .IsRequired()
-            .HasColumnName("location_name")
-            .HasMaxLength(LengthConstants.LENGTH120);
+        builder.OwnsOne(l => l.LocationName, ln =>
+        {
+            ln.Property(x => x.Value)
+                .HasColumnName("location_name")
+                .HasMaxLength(LengthConstants.LENGTH120)
+                .IsRequired();
 
-        builder.HasIndex(l => l.LocationName)
-            .HasDatabaseName("ix_locations_name")
-            .IsUnique();
+            ln.HasIndex(x => x.Value)
+                .HasDatabaseName("ix_locations_name")
+                .IsUnique();
+        });
 
         builder.OwnsOne(l => l.LocationAddress, la =>
         {
             la.ToJson("address");
         });
 
-        builder.Property(l => l.Timezone)
-            .HasConversion(lt => lt.Value, timezone => LocationTimeZone.Create(timezone).Value)
-            .IsRequired()
-            .HasColumnName("timezone");
+        builder.OwnsOne(l => l.Timezone, tz =>
+        {
+            tz.Property(x => x.Value)
+                .HasColumnName("timezone")
+                .IsRequired();
+        });
 
         builder.Property(l => l.IsActive)
             .HasColumnName("is_active")
-            .IsRequired()
             .HasDefaultValue(true);
 
         builder.HasQueryFilter(l => l.IsActive);
 
         builder.Property(l => l.CreatedAt)
             .HasColumnName("created_at")
-            .IsRequired()
             .HasDefaultValueSql("timezone('utc', now())");
 
         builder.Property(l => l.UpdatedAt)
             .HasColumnName("updated_at")
-            .IsRequired()
             .HasDefaultValueSql("timezone('utc', now())");
 
         builder.HasMany(l => l.DepartmentLocations)
             .WithOne()
             .HasForeignKey(l => l.LocationId);
-
     }
 }

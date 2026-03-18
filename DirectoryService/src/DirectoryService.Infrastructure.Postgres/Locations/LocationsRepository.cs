@@ -65,7 +65,7 @@ public class LocationsRepository: ILocationsRepository
     public async Task<Location?> GetByNameAsync(LocationName name, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Locations
-            .FirstOrDefaultAsync(l => l.LocationName == name, cancellationToken);
+            .FirstOrDefaultAsync(l => l.LocationName.Value == name.Value, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Location>> GetAllAsync(CancellationToken cancellationToken = default)
