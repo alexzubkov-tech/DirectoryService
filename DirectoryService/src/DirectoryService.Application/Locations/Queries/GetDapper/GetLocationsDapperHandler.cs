@@ -1,20 +1,20 @@
-﻿using System.Text.Json;
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using Dapper;
 using DirectoryService.Application.Abstractions;
 using DirectoryService.Application.Database;
 using DirectoryService.Application.Validation;
+using DirectoryService.Contracts.Departments;
 using DirectoryService.Contracts.Locations;
 using FluentValidation;
 using Shared;
 
 namespace DirectoryService.Application.Locations.Queries.GetDapper;
 
-public class GetLocationsDapperHandler : IQueryHandler<GetLocationsResponseDapper, GetLocationsDapperQuery>
+public class GetLocationsDapperHandler
+    : IQueryHandler<GetLocationsResponseDapper, GetLocationsDapperQuery>
 {
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly IValidator<GetLocationsDapperQuery> _validator;
-    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     public GetLocationsDapperHandler(
         IDbConnectionFactory connectionFactory,
@@ -41,7 +41,7 @@ public class GetLocationsDapperHandler : IQueryHandler<GetLocationsResponseDappe
 
         var parameters = new
         {
-            DepartmentIds = request.DepartmentIds,
+            DepartmentIds = request.DepartmentIds ?? Array.Empty<Guid>(),
             Search = request.Search,
             IsActive = request.IsActive,
             PageSize = pageSize,
@@ -49,79 +49,100 @@ public class GetLocationsDapperHandler : IQueryHandler<GetLocationsResponseDappe
         };
 
         const string countSql = """
-            SELECT COUNT(*)
-            FROM locations l
-            WHERE
-                (
-                    COALESCE(@DepartmentIds, ARRAY[]::uuid[]) = ARRAY[]::uuid[]
-                    OR EXISTS (
-                        SELECT 1
-                        FROM department_locations dl
-                        WHERE dl.location_id = l.location_id
-                          AND dl.department_id = ANY(COALESCE(@DepartmentIds, ARRAY[]::uuid[]))
-                    )
-                )
-                AND (@Search IS NULL OR l.location_name ILIKE '%' || @Search || '%')
-                AND (@IsActive IS NULL OR l.is_active = @IsActive)
-            """;
+                                SELECT COUNT(DISTINCT l.location_id)
+                                FROM locations l
+                                LEFT JOIN department_locations dl ON dl.location_id = l.location_id
+                                WHERE
+                                    (
+                                        COALESCE(@DepartmentIds::uuid[], ARRAY[]::uuid[]) = ARRAY[]::uuid[]
+                                        OR dl.department_id = ANY(@DepartmentIds::uuid[])
+                                    )
+                                    AND (@Search IS NULL OR l.location_name ILIKE '%' || @Search || '%')
+                                    AND (@IsActive IS NULL OR l.is_active = @IsActive)
+                                """;
 
         long totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
 
-        string dataSql = """
-            SELECT jsonb_build_object(
-                'Id', l.location_id,
-                'Name', l.location_name,
-                'TimeZone', l.timezone,
-                'Country', COALESCE(l.address->>'Country', ''),
-                'City', COALESCE(l.address->>'City', ''),
-                'Street', COALESCE(l.address->>'Street', ''),
-                'BuildingNumber', COALESCE(l.address->>'BuildingNumber', ''),
-                'CreatedAt', l.created_at,
-                'Departments', COALESCE(
-                    (SELECT jsonb_agg(jsonb_build_object('Id', d.department_id, 'Identificator', d.department_identifier))
-                     FROM department_locations dl
-                     JOIN departments d ON d.department_id = dl.department_id
-                     WHERE dl.location_id = l.location_id), '[]'::jsonb
-                )
-            )::text AS LocationJson
-            FROM (
-                SELECT location_id
-                FROM locations l
-                WHERE
-                    (
-                        COALESCE(@DepartmentIds, ARRAY[]::uuid[]) = ARRAY[]::uuid[]
-                        OR EXISTS (
-                            SELECT 1
-                            FROM department_locations dl
-                            WHERE dl.location_id = l.location_id
-                              AND dl.department_id = ANY(COALESCE(@DepartmentIds, ARRAY[]::uuid[]))
-                        )
-                    )
-                    AND (@Search IS NULL OR l.location_name ILIKE '%' || @Search || '%')
-                    AND (@IsActive IS NULL OR l.is_active = @IsActive)
-                ORDER BY l.created_at, l.location_name
-                LIMIT @PageSize OFFSET @Offset
-            ) AS paginated
-            JOIN locations l ON l.location_id = paginated.location_id
-            ORDER BY l.created_at, l.location_name
-            """;
+        const string dataSql = """
+                               WITH filtered_locations AS (
+                                   SELECT DISTINCT l.location_id,
+                                          l.location_name,
+                                          l.timezone,
+                                          l.address,
+                                          l.created_at
+                                   FROM locations l
+                                   LEFT JOIN department_locations dl ON dl.location_id = l.location_id
+                                   WHERE
+                                       (
+                                           COALESCE(@DepartmentIds::uuid[], ARRAY[]::uuid[]) = ARRAY[]::uuid[]
+                                           OR dl.department_id = ANY(@DepartmentIds::uuid[])
+                                       )
+                                       AND (@Search IS NULL OR l.location_name ILIKE '%' || @Search || '%')
+                                       AND (@IsActive IS NULL OR l.is_active = @IsActive)
+                               ),
+                               paginated_ids AS (
+                                   SELECT location_id
+                                   FROM filtered_locations
+                                   ORDER BY created_at, location_name
+                                   LIMIT @PageSize OFFSET @Offset
+                               )
+                               SELECT 
+                                   l.location_id AS Id,
+                                   l.location_name AS Name,
+                                   l.timezone AS TimeZone,
+                                   l.address->>'Country' AS Country,
+                                   l.address->>'City' AS City,
+                                   l.address->>'Street' AS Street,
+                                   l.address->>'BuildingNumber' AS BuildingNumber,
+                                   l.created_at AS CreatedAt,
+                                   d.department_id AS Id,
+                                   d.department_identifier AS Identificator
+                               FROM paginated_ids pi
+                               LEFT JOIN locations l ON l.location_id = pi.location_id
+                               LEFT JOIN department_locations dl ON dl.location_id = l.location_id
+                               LEFT JOIN departments d ON dl.department_id = d.department_id
+                               ORDER BY l.created_at, l.location_name
+                               """;
 
-        var jsonRows = await connection.QueryAsync<string>(dataSql, parameters);
+        var locationsDict = new Dictionary<Guid, LocationDtoDapper>();
 
-        var items = new List<LocationDtoDapper>();
-        foreach (string json in jsonRows)
-        {
-            var dto = JsonSerializer.Deserialize<LocationDtoDapper>(json, _jsonOptions);
-            if (dto is not null)
-                items.Add(dto);
-        }
+        await connection.QueryAsync<LocationDtoDapper, DepartmentInfoDto, LocationDtoDapper>(
+            dataSql,
+            param: parameters,
+            splitOn: "Id",
+            map: (location, department) =>
+            {
+                // пока не знаю как по другому смаппить
+                if (!locationsDict.TryGetValue(location.Id, out var existingLocation))
+                {
+                    existingLocation = new LocationDtoDapper
+                    {
+                        Id = location.Id,
+                        Name = location.Name,
+                        TimeZone = location.TimeZone,
+                        Country = location.Country,
+                        City = location.City,
+                        Street = location.Street,
+                        BuildingNumber = location.BuildingNumber,
+                        CreatedAt = location.CreatedAt,
+                        Departments = new List<DepartmentInfoDto>(),
+                    };
+                    locationsDict[existingLocation.Id] = existingLocation;
+                }
+
+                if (department != null && department.Id != Guid.Empty)
+                {
+                    existingLocation.Departments.Add(department);
+                }
+
+                return existingLocation;
+            });
 
         var response = new GetLocationsResponseDapper
         {
-            Items = items,
-            TotalCount = totalCount,
+            Items = locationsDict.Values.ToList(), TotalCount = totalCount,
         };
 
-        return Result.Success<GetLocationsResponseDapper, Errors>(response);
+        return response;
     }
 }

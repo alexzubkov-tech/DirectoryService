@@ -20,5 +20,5 @@ public record LocationDtoDapper
 
     public DateTime CreatedAt { get; init; }
 
-    public IReadOnlyList<DepartmentInfoDto> Departments { get; init; } = new List<DepartmentInfoDto>();
+    public List<DepartmentInfoDto> Departments { get;  init; } = [];
 }

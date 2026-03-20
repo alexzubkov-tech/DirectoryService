@@ -59,6 +59,7 @@ public static class DependencyInjectionExtensions
         });
 
         services.AddSingleton<IDbConnectionFactory, NpgSlqConnectionFactory>();
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
         services.AddScoped<IDepartmentsRepository, DepartmentsRepository>();
         services.AddScoped<IPositionsRepository, PositionsRepository>();
