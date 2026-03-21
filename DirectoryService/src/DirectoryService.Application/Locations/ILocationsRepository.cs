@@ -15,8 +15,10 @@ public interface ILocationsRepository
 
     Task<IReadOnlyList<Location>> GetAllAsync(CancellationToken cancellationToken = default);
 
-    Task<Location?> GetByIdAsync(Guid locationId, CancellationToken cancellationToken);
+    Task<Location?> GetByIdAsync(Guid locationId, CancellationToken cancellationToken = default);
 
-    Task<List<Location>> GetListByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken);
+    Task<List<Location>> GetListByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
+
+
 
 }

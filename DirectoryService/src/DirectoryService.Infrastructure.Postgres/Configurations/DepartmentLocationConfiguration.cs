@@ -8,11 +8,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DirectoryService.Infrastructure.Configurations;
 
-public class DepartmentLocationConfiguration: IEntityTypeConfiguration<DepartmentLocation>
+public class DepartmentLocationConfiguration : IEntityTypeConfiguration<DepartmentLocation>
 {
     public void Configure(EntityTypeBuilder<DepartmentLocation> builder)
     {
-
         builder.ToTable("department_locations");
 
         builder.HasKey(dl => dl.Id).HasName("pk_department_location");
@@ -37,6 +36,5 @@ public class DepartmentLocationConfiguration: IEntityTypeConfiguration<Departmen
             .HasConversion(
                 value => value.Value,
                 value => new LocationId(value));
-
     }
 }

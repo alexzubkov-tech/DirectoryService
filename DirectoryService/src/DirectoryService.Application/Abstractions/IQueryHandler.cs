@@ -4,6 +4,7 @@ using Shared;
 namespace DirectoryService.Application.Abstractions;
 
 public interface IQuery;
+
 public interface IQueryHandler<TResponse, in TQuery>
     where TQuery : IQuery
 {

@@ -1,14 +1,12 @@
 ﻿using DirectoryService.Domain;
-using DirectoryService.Domain.DepartmentLocations;
 using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Departments.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace DirectoryService.Infrastructure.Configurations;
 
-public class DepartmentConfiguration: IEntityTypeConfiguration<Department>
+public class DepartmentConfiguration : IEntityTypeConfiguration<Department>
 {
     public void Configure(EntityTypeBuilder<Department> builder)
     {
@@ -23,23 +21,25 @@ public class DepartmentConfiguration: IEntityTypeConfiguration<Department>
                 value => value.Value,
                 value => new DepartmentId(value));
 
-        builder.Property(d => d.DepartmentName)
-            .HasConversion(dn => dn.Value, name => DepartmentName.Create(name).Value)
-            .IsRequired()
-            .HasColumnName("department_name")
-            .HasMaxLength(LengthConstants.LENGTH150);
+        builder.OwnsOne(d => d.DepartmentName, dn =>
+        {
+            dn.Property(x => x.Value)
+                .HasColumnName("department_name")
+                .HasMaxLength(LengthConstants.LENGTH150)
+                .IsRequired();
+        });
 
-        builder.Property(d => d.DepartmentIdentifier)
-            .HasConversion(
-                di => di.Value,
-                identifier => DepartmentIdentifier.Create(identifier).Value)
-            .IsRequired()
-            .HasColumnName("department_identifier")
-            .HasMaxLength(LengthConstants.LENGTH150);
+        builder.OwnsOne(d => d.DepartmentIdentifier, di =>
+        {
+            di.Property(x => x.Value)
+                .HasColumnName("department_identifier")
+                .HasMaxLength(LengthConstants.LENGTH150)
+                .IsRequired();
 
-        builder.HasIndex(d => d.DepartmentIdentifier)
-            .HasDatabaseName("ix_department_identifier")
-            .IsUnique();
+            di.HasIndex(x => x.Value)
+                .HasDatabaseName("ix_department_identifier")
+                .IsUnique();
+        });
 
         builder.Property(d => d.ParentId)
             .HasColumnName("parent_id")
@@ -48,39 +48,37 @@ public class DepartmentConfiguration: IEntityTypeConfiguration<Department>
                 value => value!.Value,
                 value => new DepartmentId(value));
 
-        builder.Property(d => d.DepartmentPath)
-            .HasColumnName("department_path")
-            .HasColumnType("ltree")
-            .IsRequired()
-            .HasConversion(
-                value => value.Value,
-                value => DepartmentPath.Create(value));
+        builder.OwnsOne(d => d.DepartmentPath, dp =>
+        {
+            dp.Property(x => x.Value)
+                .HasColumnName("department_path")
+                .HasColumnType("ltree");
 
-        builder.HasIndex(d => d.DepartmentPath).HasMethod("gist").HasDatabaseName("idx_department_path");
+            dp.HasIndex(x => x.Value)
+                .HasMethod("gist")
+                .HasDatabaseName("idx_department_path");
+        });
 
         builder.Property(d => d.Depth)
             .HasColumnName("depth");
 
         builder.Property(d => d.IsActive)
-            .IsRequired()
+            .HasColumnName("is_active")
             .HasDefaultValue(true)
-            .HasColumnName("is_active");
+            .IsRequired();
 
         builder.HasQueryFilter(d => d.IsActive);
 
         builder.Property(d => d.CreatedAt)
             .HasColumnName("created_at")
-            .IsRequired()
             .HasDefaultValueSql("timezone('utc', now())");
 
         builder.Property(d => d.UpdatedAt)
             .HasColumnName("updated_at")
-            .IsRequired()
             .HasDefaultValueSql("timezone('utc', now())");
 
         builder.HasMany(d => d.ChildrenDepartments)
             .WithOne()
-            .IsRequired(false)
             .HasForeignKey(d => d.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
 

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DirectoryService.Infrastructure.Configurations;
 
-public class DepartmentPositionConfiguration: IEntityTypeConfiguration<DepartmentPosition>
+public class DepartmentPositionConfiguration : IEntityTypeConfiguration<DepartmentPosition>
 {
     public void Configure(EntityTypeBuilder<DepartmentPosition> builder)
     {
@@ -36,6 +36,5 @@ public class DepartmentPositionConfiguration: IEntityTypeConfiguration<Departmen
             .HasConversion(
                 value => value.Value,
                 value => new PositionId(value));
-
     }
 }

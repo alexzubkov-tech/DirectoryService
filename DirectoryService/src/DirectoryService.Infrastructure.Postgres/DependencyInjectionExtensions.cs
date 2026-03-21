@@ -16,7 +16,8 @@ namespace DirectoryService.Infrastructure;
 
 public static class DependencyInjectionExtensions
 {
-    public static IServiceCollection AddInfrastructurePostgres(this IServiceCollection services,
+    public static IServiceCollection AddInfrastructurePostgres(
+        this IServiceCollection services,
         IConfiguration configuration)
     {
         services.AddDbContextPool<DirectoryServiceDbContext>((sp, options) =>
@@ -37,6 +38,28 @@ public static class DependencyInjectionExtensions
 
             options.UseLoggerFactory(loggerFactory);
         });
+
+        services.AddDbContextPool<IReadDbContext, DirectoryServiceDbContext>((sp, options) =>
+        {
+            string? connectionstring = configuration.GetConnectionString(Constants.DATABASE);
+
+            IHostEnvironment hostEnvironment = sp.GetRequiredService<IHostEnvironment>();
+
+            ILoggerFactory loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+
+            options.UseNpgsql(connectionstring);
+
+            if (hostEnvironment.IsDevelopment())
+            {
+                options.EnableSensitiveDataLogging();
+                options.EnableDetailedErrors();
+            }
+
+            options.UseLoggerFactory(loggerFactory);
+        });
+
+        services.AddSingleton<IDbConnectionFactory, NpgSlqConnectionFactory>();
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
         services.AddScoped<IDepartmentsRepository, DepartmentsRepository>();
         services.AddScoped<IPositionsRepository, PositionsRepository>();
