@@ -49,7 +49,7 @@ public class GetLocationsDapperHandler
         };
 
         const string countSql = """
-                                SELECT COUNT(DISTINCT l.location_id)
+                                SELECT COUNT(DISTINCT l.location_id )
                                 FROM locations l
                                 LEFT JOIN department_locations dl ON dl.location_id = l.location_id
                                 WHERE

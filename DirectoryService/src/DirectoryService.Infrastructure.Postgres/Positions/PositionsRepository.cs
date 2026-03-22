@@ -61,6 +61,6 @@ public class PositionsRepository: IPositionsRepository
      public async Task<Position?> GetByNameAsync(PositionName name, CancellationToken ct = default)
     {
         return await _dbContext.Positions
-            .FirstOrDefaultAsync(p => p.PositionName == name, ct);
+            .FirstOrDefaultAsync(p => p.PositionName.Value == name.Value, ct);
     }
 }

@@ -9,7 +9,7 @@ using FluentValidation;
 using Microsoft.Extensions.Logging;
 using Shared;
 
-namespace DirectoryService.Application.Departments.Update.DepartmentParent;
+namespace DirectoryService.Application.Departments.Commands.Update.DepartmentParent;
 
 public class UpdateDepartmentParentHandler: ICommandHandler<UpdateDepartmentParentCommand>
 {

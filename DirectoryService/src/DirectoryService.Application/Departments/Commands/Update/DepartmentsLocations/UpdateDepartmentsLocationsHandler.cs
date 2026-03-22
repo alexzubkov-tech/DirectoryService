@@ -10,7 +10,7 @@ using FluentValidation;
 using Microsoft.Extensions.Logging;
 using Shared;
 
-namespace DirectoryService.Application.Departments.Update.DepartmentsLocations;
+namespace DirectoryService.Application.Departments.Commands.Update.DepartmentsLocations;
 
 public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartmentsLocationsCommand>
 {
