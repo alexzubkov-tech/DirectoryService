@@ -1,6 +1,6 @@
 ﻿using DirectoryService.Application.Abstractions;
 using DirectoryService.Contracts.Departments;
 
-namespace DirectoryService.Application.Departments.Update.DepartmentParent;
+namespace DirectoryService.Application.Departments.Commands.Update.DepartmentParent;
 
 public record UpdateDepartmentParentCommand(UpdateDepartmentParentRequest Request): ICommand;

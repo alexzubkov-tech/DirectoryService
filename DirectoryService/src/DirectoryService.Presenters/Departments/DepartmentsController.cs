@@ -1,7 +1,8 @@
 ﻿using DirectoryService.Application.Abstractions;
-using DirectoryService.Application.Departments.Create;
-using DirectoryService.Application.Departments.Update.DepartmentParent;
-using DirectoryService.Application.Departments.Update.DepartmentsLocations;
+using DirectoryService.Application.Departments.Commands.Create;
+using DirectoryService.Application.Departments.Commands.Update.DepartmentParent;
+using DirectoryService.Application.Departments.Commands.Update.DepartmentsLocations;
+using DirectoryService.Application.Departments.Queries;
 using DirectoryService.Contracts.Departments;
 using DirectoryService.Presenters.Controllers;
 using DirectoryService.Presenters.ResponseExtensions;
@@ -51,4 +52,21 @@ public class DepartmentsController: ApplicationController
 
         return result.IsFailure ? result.Error.ToResponse() : Ok(null);
     }
+
+    [HttpGet("top-positions")]
+    public async Task<IActionResult> GetTopDepartmentsByPositions(
+        [FromServices] IQueryHandler<
+            List<GetTopFiveDepartmentsByPositionsResponse>,
+            GetTopFiveDepartmentsByPositionsQuery> handler,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetTopFiveDepartmentsByPositionsQuery();
+
+        var result = await handler.Handle(query, cancellationToken);
+
+        return result.IsFailure
+            ? result.Error.ToResponse()
+            : Ok(result.Value);
+    }
+
 }

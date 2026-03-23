@@ -1,4 +1,4 @@
-﻿using DirectoryService.Application.Departments.Create;
+﻿using DirectoryService.Application.Departments.Commands.Create;
 using DirectoryService.Contracts.Departments;
 using DirectoryService.Domain.Departments.ValueObjects;
 using DirectoryService.IntegrationTests.Infrastructure;

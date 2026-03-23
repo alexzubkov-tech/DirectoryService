@@ -2,7 +2,7 @@
 using DirectoryService.Domain.Departments.Errors;
 using FluentValidation;
 
-namespace DirectoryService.Application.Departments.Update.DepartmentParent;
+namespace DirectoryService.Application.Departments.Commands.Update.DepartmentParent;
 
 public class UpdateDepartmentParentValidator: AbstractValidator<UpdateDepartmentParentCommand>
 {

@@ -1,4 +1,4 @@
-﻿using DirectoryService.Application.Departments.Update.DepartmentParent;
+﻿using DirectoryService.Application.Departments.Commands.Update.DepartmentParent;
 using DirectoryService.Contracts.Departments;
 using DirectoryService.Domain.Departments.ValueObjects;
 using DirectoryService.IntegrationTests.Infrastructure;
