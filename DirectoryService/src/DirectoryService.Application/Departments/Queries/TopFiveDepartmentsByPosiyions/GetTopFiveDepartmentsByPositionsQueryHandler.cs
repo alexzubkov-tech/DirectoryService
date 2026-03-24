@@ -5,7 +5,7 @@ using DirectoryService.Application.Database;
 using DirectoryService.Contracts.Departments;
 using Shared;
 
-namespace DirectoryService.Application.Departments.Queries;
+namespace DirectoryService.Application.Departments.Queries.TopFiveDepartmentsByPosiyions;
 
 public class GetTopFiveDepartmentsByPositionsQueryHandler(IDbConnectionFactory connectionFactory) :
     IQueryHandler<List<GetTopFiveDepartmentsByPositionsResponse>, GetTopFiveDepartmentsByPositionsQuery>

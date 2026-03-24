@@ -43,4 +43,16 @@ public class DepartmentApplicationErrors
         Error.Conflict(
             "department.identifier.conflict",
             $"Отдел с идентификатором '{identifier}' уже существует");
+
+    public static class Pagination
+    {
+        public static Error PageMustBePositive() =>
+            Error.Validation("pagination.page.positive", "Номер страницы должен быть больше 0.");
+
+        public static Error PageSizeMustBePositive() =>
+            Error.Validation("pagination.pageSize.positive", "Размер страницы должен быть больше 0.");
+
+        public static Error PageSizeTooLarge(int max) =>
+            Error.Validation("pagination.pageSize.max", $"Размер страницы не может превышать {max}.");
+    }
 }

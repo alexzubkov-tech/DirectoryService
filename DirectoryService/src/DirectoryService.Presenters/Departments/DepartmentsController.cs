@@ -3,6 +3,9 @@ using DirectoryService.Application.Departments.Commands.Create;
 using DirectoryService.Application.Departments.Commands.Update.DepartmentParent;
 using DirectoryService.Application.Departments.Commands.Update.DepartmentsLocations;
 using DirectoryService.Application.Departments.Queries;
+using DirectoryService.Application.Departments.Queries.GetChildrenByParentId;
+using DirectoryService.Application.Departments.Queries.RootsWithFirstNChildren;
+using DirectoryService.Application.Departments.Queries.TopFiveDepartmentsByPosiyions;
 using DirectoryService.Contracts.Departments;
 using DirectoryService.Presenters.Controllers;
 using DirectoryService.Presenters.ResponseExtensions;
@@ -69,4 +72,36 @@ public class DepartmentsController: ApplicationController
             : Ok(result.Value);
     }
 
+    [HttpGet("roots")]
+    public async Task<IActionResult> GetRootDepartmentsWithPreloadChildren(
+        [FromServices] IQueryHandler<GetRootsWithFirstNChildrenResponse,
+            GetRootsWithFirstNChildrenQuery> handler,
+        [FromQuery] GetRootsWithFirstNChildrenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetRootsWithFirstNChildrenQuery(request);
+
+        var result = await handler.Handle(query, cancellationToken);
+
+        return result.IsFailure
+            ? result.Error.ToResponse()
+            : Ok(result.Value);
+    }
+
+    [HttpGet("{parentId:guid}/children")]
+    public async Task<IActionResult> GetChildrenByParentId(
+        [FromServices] IQueryHandler<GetChildrenByParentIdResponse,
+            GetChildrenByParentIdQuery> handler,
+        [FromRoute] Guid parentId,
+        [FromQuery] GetChildrenByParentIdRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetChildrenByParentIdQuery(parentId, request);
+
+        var result = await handler.Handle(query, cancellationToken);
+
+        return result.IsFailure
+            ? result.Error.ToResponse()
+            : Ok(result.Value);
+    }
 }
