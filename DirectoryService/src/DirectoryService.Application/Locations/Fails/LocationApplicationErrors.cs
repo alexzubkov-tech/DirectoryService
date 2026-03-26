@@ -4,10 +4,12 @@ namespace DirectoryService.Application.Locations.Fails;
 
 public static class LocationApplicationErrors
 {
-    public static Error NotFound(Guid locationId) =>
+    public static Error NotFound(Guid? locationId = null) =>
         Error.NotFound(
             code: "location.not.found",
-            message: $"Локация с идентификатором '{locationId}' не найдена.",
+            message: locationId.HasValue
+                ? $"Локация с идентификатором '{locationId}' не найдена."
+                : "Отдел не найден.",
             id: locationId);
 
     public static Error Inactive(Guid locationId) =>

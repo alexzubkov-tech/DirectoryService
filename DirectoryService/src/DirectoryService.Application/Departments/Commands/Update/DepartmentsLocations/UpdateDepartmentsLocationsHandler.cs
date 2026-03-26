@@ -25,7 +25,8 @@ public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartment
         IValidator<UpdateDepartmentsLocationsCommand> validator,
         IDepartmentsRepository departmentsRepository,
         ILogger<UpdateDepartmentsLocationsHandler> logger,
-        ITransactionManager transactionManager, IReferenceValidator referenceValidator)
+        ITransactionManager transactionManager, 
+        IReferenceValidator referenceValidator)
     {
         _validator = validator;
         _referenceValidator = referenceValidator;
@@ -50,10 +51,15 @@ public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartment
         }
 
         using var transactionScope = transactionScopedResult.Value;
-        // бизнес вадидация
 
-        // существует ли такой Department и активен
-        var departmentResult = await _departmentsRepository.GetByIdAsync(command.Request.DepartmentId, cancellationToken);
+        // бизнес валидация
+
+        // существует ли такой Department и активен (ищем только активные)
+        var departmentResult = await _departmentsRepository.GetBy(
+            d => d.Id == new DepartmentId(command.Request.DepartmentId),
+            includeInactive: true,
+            cancellationToken);
+
         if (departmentResult.IsFailure)
         {
             transactionScope.Rollback();
@@ -68,7 +74,7 @@ public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartment
             return DepartmentApplicationErrors.Inactive(department.Id.Value).ToErrors();
         }
 
-        // локации существуют и уникальны
+        // локации существуют и активны
         var validLocationIdsResult =
             await _referenceValidator.ExistAndActiveLocationsAsync(
                 command.Request.LocationIds,

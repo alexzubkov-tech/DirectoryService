@@ -10,13 +10,18 @@ public class NpgSlqConnectionFactory : IDisposable, IAsyncDisposable, IDbConnect
 {
     private readonly NpgsqlDataSource _dataSource;
 
-    public NpgSlqConnectionFactory(IConfiguration configuration)
+    // Конструктор для тестов (принимает строку напрямую)
+    public NpgSlqConnectionFactory(string connectionString)
     {
-        var dataSourceBuilder = new NpgsqlDataSourceBuilder(configuration.GetConnectionString(Constants.DATABASE));
-        dataSourceBuilder
-            .UseLoggerFactory(CreateLoggerFactory());
-
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        dataSourceBuilder.UseLoggerFactory(CreateLoggerFactory());
         _dataSource = dataSourceBuilder.Build();
+    }
+
+    // Конструктор для продакшена (из IConfiguration)
+    public NpgSlqConnectionFactory(IConfiguration configuration)
+        : this(configuration.GetConnectionString(Constants.DATABASE))
+    {
     }
 
     public async Task<IDbConnection> CreateConnectionAsync(CancellationToken cancellationToken = default)
@@ -27,13 +32,7 @@ public class NpgSlqConnectionFactory : IDisposable, IAsyncDisposable, IDbConnect
     private ILoggerFactory CreateLoggerFactory() =>
         LoggerFactory.Create(builder => { builder.AddConsole(); });
 
-    public void Dispose()
-    {
-        _dataSource.Dispose();
-    }
+    public void Dispose() => _dataSource.Dispose();
 
-    public async ValueTask DisposeAsync()
-    {
-        await _dataSource.DisposeAsync();
-    }
+    public async ValueTask DisposeAsync() => await _dataSource.DisposeAsync();
 }

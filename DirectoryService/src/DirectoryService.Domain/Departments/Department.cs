@@ -64,6 +64,8 @@ public sealed class Department
 
     public DateTime UpdatedAt { get; private set; }
 
+    public DateTime? DeletedAt { get; private set; }
+
     public static Result<Department, Error> CreateParent(
         DepartmentName name,
         DepartmentIdentifier identifier,
@@ -143,6 +145,8 @@ public sealed class Department
     public void Deactivate()
     {
         IsActive = false;
+        DeletedAt = DateTime.UtcNow;
+        DepartmentPath = DepartmentPath.CreateDeletedPath(DepartmentIdentifier);
         UpdatedAt = DateTime.UtcNow;
     }
 }

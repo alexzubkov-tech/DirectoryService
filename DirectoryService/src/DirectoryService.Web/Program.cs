@@ -3,10 +3,13 @@ using DirectoryService.Web;
 using DirectoryService.Web.Configuration;
 using Serilog;
 
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
-    .CreateBootstrapLogger();
+if (Log.Logger == null)
+{
+    Log.Logger = new LoggerConfiguration()
+        .MinimumLevel.Information()
+        .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+        .CreateBootstrapLogger();
+}
 
 try
 {
@@ -36,5 +39,3 @@ namespace DirectoryService.Web
 {
     public partial class Program;
 }
-
-

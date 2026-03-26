@@ -44,9 +44,13 @@ public class CreateDepartmentHandler: ICommandHandler<Guid, CreateDepartmentComm
         var name = DepartmentName.Create(command.Request.Name).Value;
         var identifier = DepartmentIdentifier.Create(command.Request.Identifier).Value;
 
-        // 3. Проверка уникальности идентификатора
-        var existingDepartment = await _departmentsRepository.GetByIdentifierAsync(identifier, cancellationToken);
-        if (existingDepartment != null)
+        // 3. Проверка уникальности идентификатора (ищем даже неактивные)
+        var existingDepartment = await _departmentsRepository.GetBy(
+            d => d.DepartmentIdentifier.Value == identifier.Value,
+            includeInactive: true,
+            cancellationToken);
+
+        if (existingDepartment.IsSuccess)
         {
             return DepartmentApplicationErrors
                 .IdentifierAlreadyExists(identifier.Value)
@@ -74,10 +78,11 @@ public class CreateDepartmentHandler: ICommandHandler<Guid, CreateDepartmentComm
         }
         else
         {
-            var parentResult =
-                await _departmentsRepository.GetByIdAsync(
-                    command.Request.ParentId.Value,
-                    cancellationToken);
+            // Ищем родителя (только активного, т.к. нельзя создать дочерний от неактивного)
+            var parentResult = await _departmentsRepository.GetBy(
+                d => d.Id == new DepartmentId(command.Request.ParentId.Value),
+                includeInactive: true,
+                cancellationToken);
 
             if (parentResult.IsFailure)
                 return parentResult.Error.ToErrors();

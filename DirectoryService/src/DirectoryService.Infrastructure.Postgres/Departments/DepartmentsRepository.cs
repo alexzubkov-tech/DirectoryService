@@ -1,10 +1,9 @@
-﻿using CSharpFunctionalExtensions;
+﻿using System.Linq.Expressions;
+using CSharpFunctionalExtensions;
 using DirectoryService.Application.Departments;
 using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Domain.Departments;
-using DirectoryService.Domain.Departments.Errors;
 using DirectoryService.Domain.Departments.ValueObjects;
-using DirectoryService.Domain.Positions.Errors;
 using DirectoryService.Infrastructure.Departments.Errors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -64,16 +63,23 @@ public class DepartmentsRepository: IDepartmentsRepository
         }
     }
 
-     public async Task<Result<Department, Error>> GetByIdAsync(Guid id, CancellationToken ct)
+     public async Task<Result<Department, Error>> GetBy(
+        Expression<Func<Department, bool>> predicate,
+        bool includeInactive = false,
+        CancellationToken cancellationToken = default)
     {
-        var departmentId = new DepartmentId(id);
-        var department = await _dbContext.Departments
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(d => d.Id == departmentId, ct);
+        var query = _dbContext.Departments.AsQueryable();
+
+        if (includeInactive)
+        {
+            query = query.IgnoreQueryFilters();
+        }
+
+        var department = await query.FirstOrDefaultAsync(predicate, cancellationToken);
 
         if (department is null)
         {
-            return Error.NotFound("department.not.found", "department not found", id );
+            return DepartmentApplicationErrors.NotFound();
         }
 
         return department;
@@ -207,14 +213,81 @@ public class DepartmentsRepository: IDepartmentsRepository
          }
      }
 
-     public async Task<Department?> GetByIdentifierAsync(
-         DepartmentIdentifier identifier,
-         CancellationToken cancellationToken)
-     {
-         return await _dbContext.Departments
-             .IgnoreQueryFilters()
-             .FirstOrDefaultAsync(
-                 d => d.DepartmentIdentifier.Value == identifier.Value,
-                 cancellationToken);
-     }
+ public async Task<UnitResult<Error>> DeactivateUnusedLocationsAndPositionsAsync(
+    DepartmentId departmentId,
+    CancellationToken cancellationToken)
+{
+    try
+    {
+        var sql = """
+                  -- Блокируем локации, которые планируем деактивировать
+                  WITH locked_locations AS (
+                      SELECT dl.location_id
+                      FROM department_locations dl
+                      JOIN locations l ON l.location_id = dl.location_id
+                      WHERE dl.department_id = @departmentId
+                        AND l.is_active = true
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM department_locations dl2
+                            JOIN departments d ON d.department_id = dl2.department_id
+                            WHERE dl2.location_id = dl.location_id
+                              AND d.is_active = true
+                              AND d.department_id != @departmentId
+                        )
+                      FOR UPDATE
+                  ),
+                  -- Блокируем позиции, которые планируем деактивировать
+                  locked_positions AS (
+                      SELECT dp.position_id
+                      FROM department_positions dp
+                      JOIN positions p ON p.position_id = dp.position_id
+                      WHERE dp.department_id = @departmentId
+                        AND p.is_active = true
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM department_positions dp2
+                            JOIN departments d ON d.department_id = dp2.department_id
+                            WHERE dp2.position_id = dp.position_id
+                              AND d.is_active = true
+                              AND d.department_id != @departmentId
+                        )
+                      FOR UPDATE
+                  ),
+                  -- Деактивируем локации
+                  deactivated_locations AS (
+                      UPDATE locations
+                      SET is_active = false,
+                          deleted_at = now(),
+                          updated_at = now()
+                      WHERE location_id IN (SELECT location_id FROM locked_locations)
+                  ),
+                  -- Деактивируем позиции
+                  deactivated_positions AS (
+                      UPDATE positions
+                      SET is_active = false,
+                          deleted_at = now(),
+                          updated_at = now()
+                      WHERE position_id IN (SELECT position_id FROM locked_positions)
+                  )
+                  SELECT 1
+                  """;
+
+        await _dbContext.Database.ExecuteSqlRawAsync(
+            sql,
+            new[] { new NpgsqlParameter("departmentId", departmentId.Value) },
+            cancellationToken);
+
+        return UnitResult.Success<Error>();
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(
+            ex,
+            "Failed to deactivate unused locations and positions for department {DepartmentId}",
+            departmentId.Value);
+        return DepartmentInfrastructureErrors.DatabaseError();
+    }
 }
+}
+
