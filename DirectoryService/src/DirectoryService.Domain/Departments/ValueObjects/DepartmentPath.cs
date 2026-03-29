@@ -5,6 +5,7 @@ namespace DirectoryService.Domain.Departments.ValueObjects;
 public sealed record DepartmentPath
 {
     private const char SEPARATOR = '.';
+    private const string DELETED_MARKER = "deleted";
 
     public string Value { get; }
 
@@ -21,5 +22,17 @@ public sealed record DepartmentPath
 
     public DepartmentPath CreateChild(DepartmentIdentifier childIdentifier)
         => new DepartmentPath(Value + SEPARATOR + childIdentifier.Value);
+
+    public DepartmentPath CreateDeletedPath(DepartmentIdentifier identifier)
+    {
+        string[] components = Value.Split(SEPARATOR);
+
+        if (components.Length > 0)
+        {
+            components[components.Length - 1] = $"{DELETED_MARKER}-{identifier.Value}";
+        }
+
+        return new DepartmentPath(string.Join(SEPARATOR.ToString(), components));
+    }
 }
 

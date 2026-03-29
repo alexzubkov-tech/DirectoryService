@@ -1,4 +1,5 @@
-﻿using CSharpFunctionalExtensions;
+﻿using System.Linq.Expressions;
+using CSharpFunctionalExtensions;
 using DirectoryService.Application.Positions;
 using DirectoryService.Application.Positions.Fails;
 using DirectoryService.Domain.Positions;
@@ -58,9 +59,25 @@ public class PositionsRepository: IPositionsRepository
         }
     }
 
-     public async Task<Position?> GetByNameAsync(PositionName name, CancellationToken ct = default)
+     public async Task<Result<Position, Error>> GetBy(
+        Expression<Func<Position, bool>> predicate,
+        bool includeInactive = false,
+        CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Positions
-            .FirstOrDefaultAsync(p => p.PositionName.Value == name.Value, ct);
+        var query = _dbContext.Positions.AsQueryable();
+
+        if (includeInactive)
+        {
+            query = query.IgnoreQueryFilters();
+        }
+
+        var position = await query.FirstOrDefaultAsync(predicate, cancellationToken);
+
+        if (position is null)
+        {
+            return PositionApplicationErrors.NotFound();
+        }
+
+        return position;
     }
 }

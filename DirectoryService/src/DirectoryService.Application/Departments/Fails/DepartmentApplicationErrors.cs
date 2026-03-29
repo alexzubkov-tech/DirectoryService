@@ -4,10 +4,12 @@ namespace DirectoryService.Application.Departments.Fails;
 
 public class DepartmentApplicationErrors
 {
-    public static Error NotFound(Guid departmentId) =>
+    public static Error NotFound(Guid? departmentId = null) =>
         Error.NotFound(
             code: "department.not.found",
-            message: $"Отдел с идентификатором '{departmentId}' не найден.",
+            message: departmentId.HasValue
+                ? $"Отдел с идентификатором '{departmentId}' не найден."
+                : "Отдел не найден.",
             id: departmentId);
 
     public static Error Inactive(Guid departmentId) =>

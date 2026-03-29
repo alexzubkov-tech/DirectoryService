@@ -1,4 +1,5 @@
-﻿using CSharpFunctionalExtensions;
+﻿using System.Linq.Expressions;
+using CSharpFunctionalExtensions;
 using DirectoryService.Application.Locations;
 using DirectoryService.Application.Locations.Fails;
 using DirectoryService.Domain.Locations;
@@ -51,39 +52,6 @@ public class LocationsRepository: ILocationsRepository
         }
     }
 
-    public async Task<Location?> GetByAddressAsync(LocationAddress address, CancellationToken cancellationToken = default)
-    {
-        return await _dbContext.Locations
-            .FirstOrDefaultAsync(
-                l => l.LocationAddress.Country == address.Country &&
-                     l.LocationAddress.City == address.City &&
-                     l.LocationAddress.Street == address.Street &&
-                     l.LocationAddress.BuildingNumber == address.BuildingNumber,
-                cancellationToken);
-    }
-
-    public async Task<Location?> GetByNameAsync(LocationName name, CancellationToken cancellationToken = default)
-    {
-        return await _dbContext.Locations
-            .FirstOrDefaultAsync(l => l.LocationName.Value == name.Value, cancellationToken);
-    }
-
-    public async Task<IReadOnlyList<Location>> GetAllAsync(CancellationToken cancellationToken = default)
-    {
-        return await _dbContext.Locations
-            .IgnoreQueryFilters()
-            .AsNoTracking().ToListAsync(cancellationToken);
-    }
-
-    // игнорирую фильтр, чтобы конкретизировать ошибку - локация не найдена либо не активна
-    public async Task<Location?> GetByIdAsync(Guid locationId, CancellationToken cancellationToken)
-    {
-        var id = new LocationId(locationId);
-        return await _dbContext.Locations
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
-    }
-
     public async Task<List<Location>> GetListByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
     {
         var locationIds = ids
@@ -94,5 +62,27 @@ public class LocationsRepository: ILocationsRepository
             .IgnoreQueryFilters()
             .Where(l => locationIds.Contains(l.Id))
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<Result<Location, Error>> GetBy(
+        Expression<Func<Location, bool>> predicate,
+        bool includeInactive = false,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Locations.AsQueryable();
+
+        if (includeInactive)
+        {
+            query = query.IgnoreQueryFilters();
+        }
+
+        var location = await query.FirstOrDefaultAsync(predicate, cancellationToken);
+
+        if (location is null)
+        {
+            return LocationApplicationErrors.NotFound();
+        }
+
+        return location;
     }
 }

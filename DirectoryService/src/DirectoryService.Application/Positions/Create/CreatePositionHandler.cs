@@ -1,6 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Abstractions;
-using DirectoryService.Application.Departments;
 using DirectoryService.Application.Positions.Fails;
 using DirectoryService.Application.ReferenceValidation;
 using DirectoryService.Application.Validation;
@@ -15,7 +14,6 @@ namespace DirectoryService.Application.Positions.Create;
 
 public class CreatePositionHandler: ICommandHandler<Guid, CreatePositionCommand>
 {
-
     private readonly IValidator<CreatePositionCommand> _validator;
     private readonly IReferenceValidator _referenceValidator;
     private readonly IPositionsRepository _positionsRepository;
@@ -31,7 +29,6 @@ public class CreatePositionHandler: ICommandHandler<Guid, CreatePositionCommand>
         _referenceValidator = referenceValidator;
         _positionsRepository = positionsRepository;
         _logger = logger;
-
     }
 
     public async Task<Result<Guid, Errors>> Handle(CreatePositionCommand command, CancellationToken cancellationToken)
@@ -45,9 +42,13 @@ public class CreatePositionHandler: ICommandHandler<Guid, CreatePositionCommand>
         var name = PositionName.Create(command.Request.Name).Value;
         var description = PositionDescription.Create(command.Request.Description).Value;
 
-        // 3. Бизнес-валидация: уникальность имени среди всех активных позиций
-        var existingPosition = await _positionsRepository.GetByNameAsync(name, cancellationToken);
-        if (existingPosition != null && existingPosition.IsActive)
+        // 3. Бизнес-валидация: уникальность имени среди всех позиций (включая неактивные)
+        var existingPosition = await _positionsRepository.GetBy(
+            p => p.PositionName.Value == name.Value,
+            includeInactive: true,
+            cancellationToken);
+
+        if (existingPosition.IsSuccess && existingPosition.Value.IsActive)
             return PositionApplicationErrors.NameAlreadyExists(name.Value).ToErrors();
 
         // 4. Проверка departments: существуют и активны

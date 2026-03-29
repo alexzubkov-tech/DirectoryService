@@ -3,6 +3,8 @@ using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Departments.ValueObjects;
 using DirectoryService.Domain.Locations;
 using DirectoryService.Domain.Locations.ValueObjects;
+using DirectoryService.Domain.Positions;
+using DirectoryService.Domain.Positions.ValueObjects;
 using DirectoryService.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -115,6 +117,27 @@ public class DirectoryServiceBaseTests: IClassFixture<DirectoryTestWebFactory>, 
             await db.SaveChangesAsync();
 
             return department.Id.Value;
+        });
+    }
+
+    protected async Task<Guid> CreatePosition(params Guid[] departmentIds)
+    {
+        return await ExecuteInDb(async db =>
+        {
+            var positionName = PositionName.Create($"Position_{Guid.NewGuid()}").Value;
+            var positionDescription = PositionDescription.Create("Test description").Value;
+
+            var departmentIdObjects = departmentIds
+                .Select(id => new DepartmentId(id))
+                .ToList();
+
+            var positionResult = Position.Create(positionName, positionDescription, departmentIdObjects);
+            var position = positionResult.Value;
+
+            db.Positions.Add(position);
+            await db.SaveChangesAsync();
+
+            return position.Id.Value;
         });
     }
 

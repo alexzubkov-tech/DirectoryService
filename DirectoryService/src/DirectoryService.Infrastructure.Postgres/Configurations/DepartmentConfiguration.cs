@@ -77,6 +77,10 @@ public class DepartmentConfiguration : IEntityTypeConfiguration<Department>
             .HasColumnName("updated_at")
             .HasDefaultValueSql("timezone('utc', now())");
 
+        builder.Property(d => d.DeletedAt)
+            .HasColumnName("deleted_at")
+            .IsRequired(false);
+
         builder.HasMany(d => d.ChildrenDepartments)
             .WithOne()
             .HasForeignKey(d => d.ParentId)

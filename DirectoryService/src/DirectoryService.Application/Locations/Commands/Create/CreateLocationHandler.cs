@@ -35,7 +35,7 @@ public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
             return validationResult.ToListError();
         }
 
-         // Создание Value Objects
+        // Создание Value Objects
         var name = LocationName.Create(command.Request.Name).Value;
 
         var address = LocationAddress.Create(
@@ -48,16 +48,27 @@ public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
 
         // бизнес валидация:
 
-        // Нельзя создавать локацию с одним и тем же названием
-        var existingByName = await _locationsRepository.GetByNameAsync(name, cancellationToken);
-        if (existingByName != null)
+        // Нельзя создавать локацию с одним и тем же названием (проверяем даже неактивные)
+        var existingByName = await _locationsRepository.GetBy(
+            l => l.LocationName.Value == name.Value,
+            includeInactive: true,
+            cancellationToken);
+
+        if (existingByName.IsSuccess)
         {
             return LocationApplicationErrors.AlreadyExistsByName(name.Value).ToErrors();
         }
 
-        // Нельзя создавать локацию на адресе, если такой уже занят
-        var existingLocation = await _locationsRepository.GetByAddressAsync(address, cancellationToken);
-        if (existingLocation != null)
+        // Нельзя создавать локацию на адресе, если такой уже занят (проверяем даже неактивные)
+        var existingByAddress = await _locationsRepository.GetBy(
+            l => l.LocationAddress.Country == address.Country &&
+                 l.LocationAddress.City == address.City &&
+                 l.LocationAddress.Street == address.Street &&
+                 l.LocationAddress.BuildingNumber == address.BuildingNumber,
+            includeInactive: true,
+            cancellationToken);
+
+        if (existingByAddress.IsSuccess)
         {
             return LocationApplicationErrors.AlreadyExistsByAddress(address.ToString()).ToErrors();
         }

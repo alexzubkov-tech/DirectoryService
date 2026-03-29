@@ -42,12 +42,15 @@ public class Location
 
     public DateTime UpdatedAt { get; private set; }
 
+    public DateTime? DeletedAt { get; private set; }
+
     public static Result<Location, Error> Create(LocationName name, LocationAddress locationAddress, LocationTimeZone timezone)
         => new Location(name, locationAddress, timezone);
 
     public void Deactivate()
     {
         IsActive = false;
+        DeletedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
 }

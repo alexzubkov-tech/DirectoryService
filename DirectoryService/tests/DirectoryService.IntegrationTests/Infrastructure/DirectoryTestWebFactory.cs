@@ -1,5 +1,7 @@
 ﻿using System.Data.Common;
+using DirectoryService.Application.Database;
 using DirectoryService.Infrastructure;
+using DirectoryService.Infrastructure.Database;
 using DirectoryService.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -27,9 +29,12 @@ public class DirectoryTestWebFactory : WebApplicationFactory<Program>, IAsyncLif
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<DirectoryServiceDbContext>();
+            services.RemoveAll<IReadDbContext>();
+            services.RemoveAll<IDbConnectionFactory>();
 
             services.AddScoped(provider =>
             {
@@ -37,32 +42,43 @@ public class DirectoryTestWebFactory : WebApplicationFactory<Program>, IAsyncLif
                 optionsBuilder.UseNpgsql(_dbContainer.GetConnectionString());
                 return new DirectoryServiceDbContext(optionsBuilder.Options);
             });
+
+            services.AddScoped<IReadDbContext>(sp => sp.GetRequiredService<DirectoryServiceDbContext>());
+
+            services.AddSingleton<IDbConnectionFactory>(sp =>
+                new NpgSlqConnectionFactory(_dbContainer.GetConnectionString()));
         });
     }
 
     public async Task InitializeAsync()
     {
-        await _dbContainer.StartAsync();
+        try
+        {
+            await _dbContainer.StartAsync();
 
-        // Создаём DbContext напрямую для инициализации БД (без DI)
-        var optionsBuilder = new DbContextOptionsBuilder<DirectoryServiceDbContext>();
-        optionsBuilder.UseNpgsql(_dbContainer.GetConnectionString());
-        await using var dbContext = new DirectoryServiceDbContext(optionsBuilder.Options);
+            var optionsBuilder = new DbContextOptionsBuilder<DirectoryServiceDbContext>();
+            optionsBuilder.UseNpgsql(_dbContainer.GetConnectionString());
+            await using var dbContext = new DirectoryServiceDbContext(optionsBuilder.Options);
+            await dbContext.Database.EnsureDeletedAsync();
+            await dbContext.Database.EnsureCreatedAsync();
 
-        await dbContext.Database.EnsureDeletedAsync();
-        await dbContext.Database.EnsureCreatedAsync();
+            _dbConnection = new NpgsqlConnection(_dbContainer.GetConnectionString());
+            await _dbConnection.OpenAsync();
 
-        _dbConnection = new NpgsqlConnection(_dbContainer.GetConnectionString());
-        await _dbConnection.OpenAsync();
-
-        await InitializeRespawner();
+            await InitializeRespawner();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("=== CONTAINER INIT EXCEPTION ===");
+            Console.WriteLine(ex.ToString());
+            throw;
+        }
     }
 
     public new async Task DisposeAsync()
     {
         await _dbContainer.StopAsync();
         await _dbContainer.DisposeAsync();
-
         if (_dbConnection != null)
         {
             await _dbConnection.CloseAsync();

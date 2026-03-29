@@ -55,6 +55,11 @@ public class PositionConfiguration : IEntityTypeConfiguration<Position>
             .HasColumnName("updated_at")
             .HasDefaultValueSql("timezone('utc', now())");
 
+        builder.Property(p => p.DeletedAt)
+            .HasColumnName("deleted_at")
+            .IsRequired(false);
+
+
         builder.HasMany(p => p.DepartmentPositions)
             .WithOne()
             .HasForeignKey(d => d.PositionId);
