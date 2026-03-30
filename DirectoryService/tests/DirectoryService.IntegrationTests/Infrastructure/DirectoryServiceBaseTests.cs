@@ -1,4 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
+using DirectoryService.Application.Database;
+using DirectoryService.Application.Departments.Commands.SoftDelete;
+using DirectoryService.Contracts.Departments;
 using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Departments.ValueObjects;
 using DirectoryService.Domain.Locations;
@@ -6,8 +9,11 @@ using DirectoryService.Domain.Locations.ValueObjects;
 using DirectoryService.Domain.Positions;
 using DirectoryService.Domain.Positions.ValueObjects;
 using DirectoryService.Infrastructure;
+using DirectoryService.Infrastructure.Departments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Shared;
 
 namespace DirectoryService.IntegrationTests.Infrastructure;
@@ -158,6 +164,35 @@ public class DirectoryServiceBaseTests: IClassFixture<DirectoryTestWebFactory>, 
             var location = await db.Locations.FirstAsync(l => l.Id == locationId);
             location.Deactivate();
             await db.SaveChangesAsync();
+        });
+    }
+
+    protected async Task RunCleanupAsync(int thresholdDays = 30)
+    {
+        var scope = Services.CreateAsyncScope();
+        var connectionFactory = scope.ServiceProvider.GetRequiredService<IDbConnectionFactory>();
+
+        var service = new DepartmentsCleanupBackgroundService(
+            connectionFactory,
+            scope.ServiceProvider.GetRequiredService<IOptionsMonitor<CleanupOptions>>(),
+            scope.ServiceProvider.GetRequiredService<ILogger<DepartmentsCleanupBackgroundService>>());
+
+        await service.RunCleanupForTestsAsync(thresholdDays, CancellationToken.None);
+    }
+
+    protected async Task DeactivateDepartmentDaysAgo(Guid departmentId, int daysAgo)
+    {
+        var scope = Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<SoftDeleteDepartmentHandler>();
+
+        await handler.Handle(new SoftDeleteDepartmentCommand(departmentId), CancellationToken.None);
+
+        await ExecuteInDb(async db =>
+        {
+            var deletedAt = DateTime.UtcNow.AddDays(-daysAgo).AddMinutes(1);
+            await db.Database.ExecuteSqlRawAsync(
+                "UPDATE departments SET deleted_at = {0} WHERE department_id = {1}",
+                deletedAt, departmentId);
         });
     }
 
