@@ -66,117 +66,97 @@ private async Task CleanupAsync(int thresholdDays, CancellationToken cancellatio
 
     try
     {
-        var candidates = (await connection.QueryAsync<(Guid Id, Guid? ParentId, string Path)>(
-            """
-            SELECT
-                department_id         AS Id,
-                parent_id             AS ParentId,
-                department_path::text AS Path
-            FROM departments
-            WHERE is_active = false
-              AND deleted_at < timezone('utc', now()) - make_interval(days => @ThresholdDays)
-            ORDER BY depth DESC
-            """,
-            new { ThresholdDays = thresholdDays },
-            transaction)).ToList();
-
-        if (candidates.Count == 0)
-        {
-            transaction.Commit();
-            _logger.LogInformation("Cleanup: nothing to delete.");
-            return;
-        }
-
-        var candidateIds = candidates.Select(c => c.Id).ToArray();
-
-        _logger.LogInformation("Found {Count} candidates for deletion.", candidates.Count);
-
-        await connection.ExecuteAsync(
+        var deletedCount = await connection.ExecuteScalarAsync<int>(
             """
             WITH candidates AS (
                 SELECT
-                    department_id,
-                    department_path                                                              AS deleted_path,
-                    NULLIF(subpath(department_path, 0, nlevel(department_path) - 1)::text, '')  AS parent_path
-                FROM departments
-                WHERE department_id = ANY(@CandidateIds)
+                    d.department_id,
+                    d.parent_id,
+                    d.department_path AS deleted_path,
+                    NULLIF(subpath(d.department_path, 0, nlevel(d.department_path) - 1)::text, '') AS parent_path
+                FROM departments d
+                WHERE d.is_active = false
+                  AND d.deleted_at < timezone('utc', now()) - make_interval(days => @ThresholdDays)
             ),
+
             nearest_candidate AS (
-                SELECT DISTINCT ON (d.department_id)
-                    d.department_id AS child_id,
+                SELECT DISTINCT ON (child.department_id)
+                    child.department_id AS child_id,
+                    c.department_id     AS deleted_id,
+                    c.parent_id         AS new_parent_id,
                     c.deleted_path,
                     c.parent_path
-                FROM departments d
+                FROM departments child
                 JOIN candidates c
-                    ON d.department_path <@ c.deleted_path::ltree
-                    AND d.department_path != c.deleted_path::ltree
-                WHERE d.is_active = true
-                ORDER BY d.department_id, nlevel(c.deleted_path) DESC
-            )
-            UPDATE departments AS child
-            SET
-                department_path = CASE
-                    WHEN nc.parent_path IS NOT NULL
-                        THEN nc.parent_path::ltree
-                             || subpath(child.department_path, nlevel(nc.deleted_path::ltree))
-                    ELSE subpath(child.department_path, nlevel(nc.deleted_path::ltree))
-                END,
-                depth = nlevel(CASE
-                    WHEN nc.parent_path IS NOT NULL
-                        THEN nc.parent_path::ltree
-                             || subpath(child.department_path, nlevel(nc.deleted_path::ltree))
-                    ELSE subpath(child.department_path, nlevel(nc.deleted_path::ltree))
-                END) - 1,
-                updated_at = timezone('utc', now())
-            FROM nearest_candidate nc
-            WHERE child.department_id = nc.child_id
-            """,
-            new { CandidateIds = candidateIds },
-            transaction);
-
-        await connection.ExecuteAsync(
-            """
-            WITH candidates AS (
-                SELECT department_id, parent_id
-                FROM departments
-                WHERE department_id = ANY(@CandidateIds)
-            )
-            UPDATE departments
-            SET
-                parent_id  = c.parent_id,
-                updated_at = timezone('utc', now())
-            FROM candidates c
-            WHERE departments.parent_id = c.department_id
-              AND departments.is_active = true
-            """,
-            new { CandidateIds = candidateIds },
-            transaction);
-
-        await connection.ExecuteAsync(
-            """
-            WITH
-            del_locations AS (
-                DELETE FROM department_locations
-                WHERE department_id = ANY(@CandidateIds)
+                    ON child.department_path <@ c.deleted_path
+                   AND child.department_path != c.deleted_path
+                WHERE child.is_active = true
+                ORDER BY child.department_id, nlevel(c.deleted_path) DESC
             ),
-            del_positions AS (
-                DELETE FROM department_positions
-                WHERE department_id = ANY(@CandidateIds)
+
+            updated_children AS (
+                UPDATE departments AS child
+                SET
+                    parent_id = CASE
+                        WHEN child.parent_id = nc.deleted_id THEN nc.new_parent_id
+                        ELSE child.parent_id
+                    END,
+
+                    department_path = CASE
+                        WHEN nc.parent_path IS NULL
+                            THEN subpath(child.department_path, nlevel(nc.deleted_path))
+                        ELSE nc.parent_path::ltree || subpath(child.department_path, nlevel(nc.deleted_path))
+                    END,
+
+                    depth = nlevel(
+                        CASE
+                            WHEN nc.parent_path IS NULL
+                                THEN subpath(child.department_path, nlevel(nc.deleted_path))
+                            ELSE nc.parent_path::ltree || subpath(child.department_path, nlevel(nc.deleted_path))
+                        END
+                    ) - 1,
+
+                    updated_at = timezone('utc', now())
+                FROM nearest_candidate nc
+                WHERE child.department_id = nc.child_id
+                RETURNING child.department_id
             ),
-            del_departments AS (
-                DELETE FROM departments
-                WHERE department_id = ANY(@CandidateIds)
+
+            deleted_locations AS (
+                DELETE FROM department_locations dl
+                USING candidates c
+                WHERE dl.department_id = c.department_id
+                RETURNING dl.department_id
+            ),
+
+            deleted_positions AS (
+                DELETE FROM department_positions dp
+                USING candidates c
+                WHERE dp.department_id = c.department_id
+                RETURNING dp.department_id
+            ),
+
+            deleted_departments AS (
+                DELETE FROM departments d
+                USING candidates c
+                WHERE d.department_id = c.department_id
+                RETURNING d.department_id
             )
-            SELECT 1
+
+            SELECT COUNT(*) FROM deleted_departments;
             """,
-            new { CandidateIds = candidateIds },
+            new { ThresholdDays = thresholdDays },
             transaction);
 
         transaction.Commit();
 
-        _logger.LogInformation(
-            "Cleanup completed. Deleted {Count} departments.",
-            candidates.Count);
+        if (deletedCount == 0)
+        {
+            _logger.LogInformation("Cleanup: nothing to delete.");
+            return;
+        }
+
+        _logger.LogInformation("Cleanup completed. Deleted {Count} departments.", deletedCount);
     }
     catch (Exception ex)
     {
