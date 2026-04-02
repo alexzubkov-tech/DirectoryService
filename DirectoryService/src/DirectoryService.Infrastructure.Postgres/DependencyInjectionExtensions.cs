@@ -2,6 +2,7 @@
 using DirectoryService.Application.Departments;
 using DirectoryService.Application.Locations;
 using DirectoryService.Application.Positions;
+using DirectoryService.Contracts.Departments;
 using DirectoryService.Infrastructure.Database;
 using DirectoryService.Infrastructure.Departments;
 using DirectoryService.Infrastructure.Locations;
@@ -66,6 +67,12 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ILocationsRepository, LocationsRepository>();
 
         services.AddScoped<ITransactionManager, TransactionManager>();
+
+        services.AddHostedService<DepartmentsCleanupBackgroundService>();
+
+        services.AddOptions<CleanupOptions>()
+            .BindConfiguration(CleanupOptions.SECTION_NAME)
+            .ValidateOnStart();
 
         return services;
     }
