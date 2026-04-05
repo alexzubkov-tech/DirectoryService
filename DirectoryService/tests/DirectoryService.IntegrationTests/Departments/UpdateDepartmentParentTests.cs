@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DirectoryService.IntegrationTests.Departments;
 
+[Collection("Sequential")]
 public class UpdateDepartmentParentTests(DirectoryTestWebFactory factory)
     : DirectoryServiceBaseTests(factory)
 {
