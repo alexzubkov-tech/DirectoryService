@@ -15,7 +15,7 @@ public static class DependencyInjection
         services
             .AddSerilogLogging(configuration)
             .AddWebDependencies()
-            .AddApplication()
+            .AddApplication(configuration)
             .AddInfrastructurePostgres(configuration);
 
     private static IServiceCollection AddWebDependencies(this IServiceCollection services)

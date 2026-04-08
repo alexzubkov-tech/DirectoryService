@@ -7,39 +7,41 @@ using DirectoryService.Application.Validation;
 using DirectoryService.Domain.Departments.ValueObjects;
 using DirectoryService.Domain.Locations.ValueObjects;
 using FluentValidation;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using Shared;
 
 namespace DirectoryService.Application.Departments.Commands.Update.DepartmentsLocations;
 
-public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartmentsLocationsCommand>
+public class UpdateDepartmentsLocationsHandler : ICommandHandler<UpdateDepartmentsLocationsCommand>
 {
     private readonly IValidator<UpdateDepartmentsLocationsCommand> _validator;
     private readonly IReferenceValidator _referenceValidator;
     private readonly IDepartmentsRepository _departmentsRepository;
     private readonly ILogger<UpdateDepartmentsLocationsHandler> _logger;
     private readonly ITransactionManager _transactionManager;
-
+    private readonly HybridCache _cache;
 
     public UpdateDepartmentsLocationsHandler(
         IValidator<UpdateDepartmentsLocationsCommand> validator,
         IDepartmentsRepository departmentsRepository,
         ILogger<UpdateDepartmentsLocationsHandler> logger,
-        ITransactionManager transactionManager, 
-        IReferenceValidator referenceValidator)
+        ITransactionManager transactionManager,
+        IReferenceValidator referenceValidator,
+        HybridCache cache)
     {
         _validator = validator;
         _referenceValidator = referenceValidator;
         _departmentsRepository = departmentsRepository;
         _logger = logger;
         _transactionManager = transactionManager;
+        _cache = cache;
     }
 
     public async Task<UnitResult<Errors>> Handle(
         UpdateDepartmentsLocationsCommand command,
         CancellationToken cancellationToken)
     {
-        // валидация входных данных
         var validationResult = await _validator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
             return validationResult.ToListError();
@@ -52,9 +54,6 @@ public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartment
 
         using var transactionScope = transactionScopedResult.Value;
 
-        // бизнес валидация
-
-        // существует ли такой Department и активен (ищем только активные)
         var departmentResult = await _departmentsRepository.GetBy(
             d => d.Id == new DepartmentId(command.Request.DepartmentId),
             includeInactive: true,
@@ -74,7 +73,6 @@ public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartment
             return DepartmentApplicationErrors.Inactive(department.Id.Value).ToErrors();
         }
 
-        // локации существуют и активны
         var validLocationIdsResult =
             await _referenceValidator.ExistAndActiveLocationsAsync(
                 command.Request.LocationIds,
@@ -90,14 +88,12 @@ public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartment
             .Select(id => new LocationId(id))
             .ToList();
 
-        // обновление
         await _departmentsRepository.DeleteLocationsByDepartmentIdAsync(
             new DepartmentId(command.Request.DepartmentId),
             cancellationToken);
 
         department.UpdateLocations(validLocationIds);
 
-        // сохранение в репозитории
         var saveResult = await _transactionManager.SaveChangesAsync(cancellationToken);
         if (saveResult.IsFailure)
         {
@@ -112,7 +108,8 @@ public class UpdateDepartmentsLocationsHandler: ICommandHandler<UpdateDepartment
             return commitedResult.Error.ToErrors();
         }
 
-        // логирование
+        await _cache.RemoveByTagAsync(["departments:list"], cancellationToken);
+
         _logger.LogInformation("Локации отдела успешно обновлены");
 
         return UnitResult.Success<Errors>();

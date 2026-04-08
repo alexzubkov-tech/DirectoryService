@@ -7,21 +7,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DirectoryService.IntegrationTests.Departments;
 
-
 [Collection("Sequential")]
 public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryServiceBaseTests(factory)
 {
-    // Успешные сценарии
     [Fact]
     public async Task CreateDepartment_with_valid_data_should_succeed()
     {
-        var locationId = await CreateLocation();
-
+        var locationId = await CreateLocation("Location-Valid");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest("Отдел", "otdel", null, [locationId.Value]));
-
+                new CreateDepartmentRequest("Отдел", "otdel-valid", null, [locationId.Value]));
             return sut.Handle(command, CancellationToken.None);
         });
 
@@ -29,7 +25,6 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
         {
             var department = await dbContext.Departments
                 .FirstAsync(d => d.Id == new DepartmentId(result.Value));
-
             Assert.NotNull(department);
             Assert.Equal(department.Id.Value, result.Value);
             Assert.True(result.IsSuccess);
@@ -40,22 +35,13 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_child_should_succeed()
     {
-        var locationId = await CreateLocation();
-
-        var parentId = await CreateDepartment(
-            name: "родитель",
-            identifier: "parent",
-            locationIds: [locationId.Value]);
+        var locationId = await CreateLocation("Location-Child");
+        var parentId = await CreateDepartment("родитель", "parent-dept", null, [locationId.Value]);
 
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Child",
-                    "child",
-                    parentId,
-                    [locationId.Value]));
-
+                new CreateDepartmentRequest("Child", "child-dept", parentId, [locationId.Value]));
             return sut.Handle(command, CancellationToken.None);
         });
 
@@ -63,7 +49,6 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
         {
             var department = await db.Departments
                 .FirstAsync(d => d.Id == new DepartmentId(result.Value));
-
             Assert.NotNull(department);
             Assert.Equal(department.Id.Value, result.Value);
             Assert.NotNull(department.ParentId);
@@ -74,19 +59,14 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_multiple_locations_should_succeed()
     {
-        var loc1 = await CreateLocation();
-        var loc2 = await CreateLocation(name: "Локация2");
-        var loc3 = await CreateLocation(name: "Локация3");
+        var loc1 = await CreateLocation("Локация-Один");
+        var loc2 = await CreateLocation("Локация-Два");
+        var loc3 = await CreateLocation("Локация-Три");
 
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Dept",
-                    "dept-multi",
-                    null,
-                    [loc1.Value, loc2.Value, loc3.Value]));
-
+                new CreateDepartmentRequest("Dept", "dept-multi", null, [loc1.Value, loc2.Value, loc3.Value]));
             return sut.Handle(command, CancellationToken.None);
         });
 
@@ -94,7 +74,6 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
         {
             var department = await dbContext.Departments
                 .FirstAsync(d => d.Id == new DepartmentId(result.Value));
-
             Assert.NotNull(department);
             Assert.Equal(department.Id.Value, result.Value);
             Assert.True(result.IsSuccess);
@@ -105,7 +84,7 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_identifier_containing_spaces_should_normalize_and_succeed()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-Spaces");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
@@ -122,44 +101,31 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
         });
     }
 
-    // Негативные тесты: дубликат идентификатора
     [Fact]
     public async Task CreateDepartment_with_duplicate_identifier_should_fail()
     {
-        var locationId = await CreateLocation();
-
-        await CreateDepartment(identifier: "same-id", locationIds: [locationId.Value]);
+        var locationId = await CreateLocation("Location-Duplicate");
+        await CreateDepartment("First Dept", "same-identifier", null, [locationId.Value]);
 
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Dept",
-                    "same-id",
-                    null,
-                    [locationId.Value]));
-
+                new CreateDepartmentRequest("Dept", "same-identifier", null, [locationId.Value]));
             return sut.Handle(command, CancellationToken.None);
         });
 
         Assert.True(result.IsFailure);
     }
 
-    // Негативные тесты: родитель
     [Fact]
     public async Task CreateDepartment_with_not_found_parent_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-NotFoundParent");
 
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Dept",
-                    "dept",
-                    Guid.NewGuid(),
-                    [locationId.Value]));
-
+                new CreateDepartmentRequest("Dept", "dept-notfound", Guid.NewGuid(), [locationId.Value]));
             return sut.Handle(command, CancellationToken.None);
         });
 
@@ -169,40 +135,27 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_inactive_parent_should_fail()
     {
-        var locationId = await CreateLocation();
-
-        var parentId = await CreateDepartment(locationIds: [locationId.Value]);
-
+        var locationId = await CreateLocation("Location-InactiveParent");
+        var parentId = await CreateDepartment("InactiveParent", "inactive-parent", null, [locationId.Value]);
         await DeactivateDepartment(parentId);
 
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Child",
-                    "child",
-                    parentId,
-                    [locationId.Value]));
-
+                new CreateDepartmentRequest("Child", "child-inactive", parentId, [locationId.Value]));
             return sut.Handle(command, CancellationToken.None);
         });
 
         Assert.True(result.IsFailure);
     }
 
-    // Негативные тесты: локации
     [Fact]
     public async Task CreateDepartment_with_not_found_location_should_fail()
     {
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Dept",
-                    "dept",
-                    null,
-                    [Guid.NewGuid()]));
-
+                new CreateDepartmentRequest("Dept", "dept-notfound-loc", null, [Guid.NewGuid()]));
             return sut.Handle(command, CancellationToken.None);
         });
 
@@ -212,19 +165,13 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_inactive_location_should_fail()
     {
-        var locationId = await CreateLocation();
-
+        var locationId = await CreateLocation("Location-Inactive");
         await DeactivateLocation(locationId);
 
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Dept",
-                    "dept",
-                    null,
-                    [locationId.Value]));
-
+                new CreateDepartmentRequest("Dept", "dept-inactive-loc", null, [locationId.Value]));
             return sut.Handle(command, CancellationToken.None);
         });
 
@@ -234,21 +181,15 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_multiple_locations_one_inactive_should_fail()
     {
-        var loc1 = await CreateLocation(name: "loc1");
-        var loc2 = await CreateLocation(name: "loc2");
-        var loc3 = await CreateLocation(name: "loc3");
-
+        var loc1 = await CreateLocation("loc-valid");
+        var loc2 = await CreateLocation("loc-inactive");
+        var loc3 = await CreateLocation("loc-extra");
         await DeactivateLocation(loc2);
 
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Dept",
-                    "dept-multi2",
-                    null,
-                    [loc1.Value, loc2.Value, loc3.Value]));
-
+                new CreateDepartmentRequest("Dept", "dept-multi-two", null, [loc1.Value, loc2.Value, loc3.Value]));
             return sut.Handle(command, CancellationToken.None);
         });
 
@@ -258,18 +199,13 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_multiple_locations_one_not_found_should_fail()
     {
-        var loc1 = await CreateLocation(name: "loc1");
-        var loc2 = await CreateLocation(name: "loc2");
+        var loc1 = await CreateLocation("loc-one");
+        var loc2 = await CreateLocation("loc-two");
 
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Dept",
-                    "dept-multi3",
-                    null,
-                    [loc1.Value, loc2.Value, Guid.NewGuid()]));
-
+                new CreateDepartmentRequest("Dept", "dept-multi-three", null, [loc1.Value, loc2.Value, Guid.NewGuid()]));
             return sut.Handle(command, CancellationToken.None);
         });
 
@@ -279,37 +215,26 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_three_locations_one_valid_one_inactive_one_not_found_should_fail()
     {
-        var validLocation = await CreateLocation(name: "valid");
-        var inactiveLocation = await CreateLocation(name: "inactive");
-
+        var validLocation = await CreateLocation("valid-loc");
+        var inactiveLocation = await CreateLocation("inactive-loc");
         await DeactivateLocation(inactiveLocation);
-
         var notFoundLocation = Guid.NewGuid();
 
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
-                new CreateDepartmentRequest(
-                    "Dept",
-                    "dept-mixed",
-                    null,
-                    [
-                        validLocation.Value,
-                        inactiveLocation.Value,
-                        notFoundLocation
-                    ]));
-
+                new CreateDepartmentRequest("Dept", "dept-mixed", null,
+                    [validLocation.Value, inactiveLocation.Value, notFoundLocation]));
             return sut.Handle(command, CancellationToken.None);
         });
 
         Assert.True(result.IsFailure);
     }
 
-    // Валидация Name
     [Fact]
     public async Task CreateDepartment_with_name_too_short_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-Short");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
@@ -322,7 +247,7 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_name_too_long_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-Long");
         var longName = new string('a', 151);
         var result = await ExecuteHandler(sut =>
         {
@@ -336,7 +261,7 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_name_empty_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-Empty");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
@@ -349,7 +274,7 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_name_whitespace_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-Whitespace");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
@@ -359,11 +284,10 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
         Assert.True(result.IsFailure);
     }
 
-    // Валидация Identifier
     [Fact]
     public async Task CreateDepartment_with_identifier_too_short_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-IdShort");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
@@ -376,7 +300,7 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_identifier_too_long_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-IdLong");
         var longIdentifier = new string('a', 151);
         var result = await ExecuteHandler(sut =>
         {
@@ -390,7 +314,7 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_identifier_empty_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-IdEmpty");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
@@ -403,7 +327,7 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_identifier_whitespace_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-IdWhitespace");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
@@ -416,7 +340,7 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_identifier_invalid_characters_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-IdInvalid");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(
@@ -426,7 +350,6 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
         Assert.True(result.IsFailure);
     }
 
-    // Валидация списка локаций
     [Fact]
     public async Task CreateDepartment_with_empty_location_ids_should_fail()
     {
@@ -442,7 +365,7 @@ public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryS
     [Fact]
     public async Task CreateDepartment_with_duplicate_location_ids_should_fail()
     {
-        var locationId = await CreateLocation();
+        var locationId = await CreateLocation("Location-DuplicateInList");
         var result = await ExecuteHandler(sut =>
         {
             var command = new CreateDepartmentCommand(

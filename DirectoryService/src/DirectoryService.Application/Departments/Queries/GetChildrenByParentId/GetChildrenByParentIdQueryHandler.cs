@@ -6,6 +6,7 @@ using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Application.Validation;
 using DirectoryService.Contracts.Departments;
 using FluentValidation;
+using Microsoft.Extensions.Caching.Hybrid;
 using Shared;
 
 namespace DirectoryService.Application.Departments.Queries.GetChildrenByParentId;
@@ -15,13 +16,16 @@ public class GetChildrenByParentIdQueryHandler :
 {
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly IValidator<GetChildrenByParentIdQuery> _validator;
+    private readonly HybridCache _cache;
 
     public GetChildrenByParentIdQueryHandler(
         IDbConnectionFactory connectionFactory,
-        IValidator<GetChildrenByParentIdQuery> validator)
+        IValidator<GetChildrenByParentIdQuery> validator,
+        HybridCache cache)
     {
         _connectionFactory = connectionFactory;
         _validator = validator;
+        _cache = cache;
     }
 
     public async Task<Result<GetChildrenByParentIdResponse, Errors>> Handle(
@@ -36,15 +40,12 @@ public class GetChildrenByParentIdQueryHandler :
 
         var parentId = query.ParentId;
         var request = query.Request;
-        int offset = (request.Page - 1) * request.PageSize;
 
         var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
 
-        var parameters = new
+        var checkParameters = new
         {
             parent_id = parentId,
-            offset = offset,
-            limit = request.PageSize,
         };
 
         const string checkParentSql = """
@@ -55,61 +56,88 @@ public class GetChildrenByParentIdQueryHandler :
                                       )
                                       """;
 
-        bool parentExists = await connection.ExecuteScalarAsync<bool>(checkParentSql, parameters);
+        bool parentExists = await connection.ExecuteScalarAsync<bool>(checkParentSql, checkParameters);
         if (!parentExists)
         {
             return DepartmentApplicationErrors.ParentNotFound(parentId).ToErrors();
         }
 
-        const string countSql = """
-                                SELECT COUNT(*)
-                                FROM departments
-                                WHERE parent_id = @parent_id
-                                  AND is_active = TRUE
-                                """;
+        string cacheKey = DepartmentCacheKeys.GetChildrenByParentId(
+            parentId,
+            request.Page,
+            request.PageSize);
 
-        long totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
+        var response = await _cache.GetOrCreateAsync(
+            cacheKey,
+            async token =>
+            {
+                int offset = (request.Page - 1) * request.PageSize;
 
-        const string dataSql = """
-                               SELECT
-                                   d.department_id AS Id,
-                                   d.parent_id AS ParentId,
-                                   d.department_name AS Name,
-                                   d.department_identifier AS Identificator,
-                                   d.department_path AS Path,
-                                   CAST(d.depth AS VARCHAR) AS Depth,
-                                   d.is_active AS IsActive,
-                                   d.created_at AS CreatedAt,
-                                   d.updated_at AS UpdatedAt,
-                                   EXISTS(
-                                       SELECT 1 
-                                       FROM departments 
-                                       WHERE parent_id = d.department_id
-                                         AND is_active = TRUE
-                                       LIMIT 1
-                                   ) AS HasMoreChildren
-                               FROM departments d
-                               WHERE d.parent_id = @parent_id
-                                 AND d.is_active = TRUE
-                               ORDER BY d.created_at, d.department_id
-                               OFFSET @offset
-                               LIMIT @limit
-                               """;
+                var parameters = new
+                {
+                    parent_id = parentId,
+                    offset,
+                    limit = request.PageSize,
+                };
 
-        var rawDepartments = await connection.QueryAsync<DepartmentDto>(dataSql, parameters);
-        var childrenList = rawDepartments.ToList();
+                const string countSql = """
+                                        SELECT COUNT(*)
+                                        FROM departments
+                                        WHERE parent_id = @parent_id
+                                          AND is_active = TRUE
+                                        """;
 
-        foreach (var child in childrenList)
-        {
-            child.Children = null;
-        }
+                long totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
 
-        var response = new GetChildrenByParentIdResponse
-        {
-            Items = childrenList,
-            TotalCount = totalCount,
-        };
+                const string dataSql = """
+                                       SELECT
+                                           d.department_id AS Id,
+                                           d.parent_id AS ParentId,
+                                           d.department_name AS Name,
+                                           d.department_identifier AS Identificator,
+                                           d.department_path AS Path,
+                                           CAST(d.depth AS VARCHAR) AS Depth,
+                                           d.is_active AS IsActive,
+                                           d.created_at AS CreatedAt,
+                                           d.updated_at AS UpdatedAt,
+                                           EXISTS(
+                                               SELECT 1 
+                                               FROM departments 
+                                               WHERE parent_id = d.department_id
+                                                 AND is_active = TRUE
+                                               LIMIT 1
+                                           ) AS HasMoreChildren
+                                       FROM departments d
+                                       WHERE d.parent_id = @parent_id
+                                         AND d.is_active = TRUE
+                                       ORDER BY d.created_at, d.department_id
+                                       OFFSET @offset
+                                       LIMIT @limit
+                                       """;
+
+                var rawDepartments = await connection.QueryAsync<DepartmentDto>(dataSql, parameters);
+                var childrenList = rawDepartments.ToList();
+
+                foreach (var child in childrenList)
+                {
+                    child.Children = null;
+                }
+
+                return new GetChildrenByParentIdResponse
+                {
+                    Items = childrenList,
+                    TotalCount = totalCount,
+                };
+            },
+            tags: ["departments:list"],
+            cancellationToken: cancellationToken);
 
         return response;
+    }
+
+    private static class DepartmentCacheKeys
+    {
+        public static string GetChildrenByParentId(Guid parentId, int page, int pageSize)
+            => $"departments:children:parentId={parentId}:page={page}:pageSize={pageSize}";
     }
 }

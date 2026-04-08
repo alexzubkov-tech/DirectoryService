@@ -2,12 +2,13 @@
 using DirectoryService.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
-namespace DirectoryService.IntegrationTests.Departments;
+namespace DirectoryService.IntegrationTests.Departments.Commands;
 
 [Collection("Sequential")]
 public class DepartmentsCleanupBackgroundServiceTests : DirectoryServiceBaseTests
 {
-    public DepartmentsCleanupBackgroundServiceTests(DirectoryTestWebFactory factory) : base(factory)
+    public DepartmentsCleanupBackgroundServiceTests(DirectoryTestWebFactory factory)
+        : base(factory)
     {
     }
 
@@ -152,7 +153,7 @@ public class DepartmentsCleanupBackgroundServiceTests : DirectoryServiceBaseTest
         await ExecuteInDb(async db =>
         {
             var dev = await db.Departments.FirstAsync(d => d.Id == new DepartmentId(devId));
-            Assert.Equal("hq-dept.dev-dept", dev.DepartmentPath.Value);
+            Assert.Equal("hq_dept.dev_dept", dev.DepartmentPath.Value);
             Assert.Equal(1, dev.Depth);
             Assert.Equal(hqId, dev.ParentId!.Value);
         });
@@ -173,11 +174,11 @@ public class DepartmentsCleanupBackgroundServiceTests : DirectoryServiceBaseTest
         await ExecuteInDb(async db =>
         {
             var dev = await db.Departments.FirstAsync(d => d.Id == new DepartmentId(devId));
-            Assert.Equal("hq-dept.dev-dept", dev.DepartmentPath.Value);
+            Assert.Equal("hq_dept.dev_dept", dev.DepartmentPath.Value);
             Assert.Equal(1, dev.Depth);
 
             var backend = await db.Departments.FirstAsync(d => d.Id == new DepartmentId(backendId));
-            Assert.Equal("hq-dept.dev-dept.backend-dept", backend.DepartmentPath.Value);
+            Assert.Equal("hq_dept.dev_dept.backend_dept", backend.DepartmentPath.Value);
             Assert.Equal(2, backend.Depth);
         });
     }
@@ -195,7 +196,7 @@ public class DepartmentsCleanupBackgroundServiceTests : DirectoryServiceBaseTest
         await ExecuteInDb(async db =>
         {
             var it = await db.Departments.FirstAsync(d => d.Id == new DepartmentId(itId));
-            Assert.Equal("it-dept", it.DepartmentPath.Value);
+            Assert.Equal("it_dept", it.DepartmentPath.Value);
             Assert.Equal(0, it.Depth);
             Assert.Null(it.ParentId);
         });

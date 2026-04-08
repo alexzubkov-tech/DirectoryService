@@ -35,4 +35,7 @@ finally
     Log.CloseAndFlush();
 }
 
-public partial class Program { }
+namespace DirectoryService.Web
+{
+    public partial class Program { }
+}
