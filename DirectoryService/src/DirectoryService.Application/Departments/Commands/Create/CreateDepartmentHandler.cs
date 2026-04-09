@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Abstractions;
+using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Application.ReferenceValidation;
 using DirectoryService.Application.Validation;
@@ -110,7 +111,7 @@ public class CreateDepartmentHandler : ICommandHandler<Guid, CreateDepartmentCom
         if (addResult.IsFailure)
             return addResult.Error.ToErrors();
 
-        await _cache.RemoveByTagAsync("departments:list", cancellationToken);
+        await _cache.RemoveByTagAsync(CacheTags.DEPARTMENTS_LIST, cancellationToken);
 
         _logger.LogInformation(
             "Department {DepartmentId} created with path {Path}",
@@ -119,7 +120,7 @@ public class CreateDepartmentHandler : ICommandHandler<Guid, CreateDepartmentCom
 
         _logger.LogInformation(
             "Cache invalidated by tag {CacheTag} after department creation. DepartmentId: {DepartmentId}",
-            "departments:list",
+            CacheTags.DEPARTMENTS_LIST,
             department.Id.Value);
 
         return department.Id.Value;

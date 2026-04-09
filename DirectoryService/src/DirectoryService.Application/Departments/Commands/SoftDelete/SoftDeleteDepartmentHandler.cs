@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Abstractions;
+using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
 using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Domain.Departments.ValueObjects;
@@ -98,7 +99,7 @@ public class SoftDeleteDepartmentHandler : ICommandHandler<SoftDeleteDepartmentC
             return committedResult.Error.ToErrors();
         }
 
-        await _cache.RemoveByTagAsync(["departments:list"], cancellationToken);
+        await _cache.RemoveByTagAsync(CacheTags.DEPARTMENTS_LIST, cancellationToken);
 
         _logger.LogInformation(
             "Отдел {DepartmentName} (Id: {DepartmentId}) успешно soft удален",

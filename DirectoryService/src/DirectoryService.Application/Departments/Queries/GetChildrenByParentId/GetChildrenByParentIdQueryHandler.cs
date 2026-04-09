@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using Dapper;
 using DirectoryService.Application.Abstractions;
+using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
 using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Application.Validation;
@@ -129,7 +130,7 @@ public class GetChildrenByParentIdQueryHandler :
                     TotalCount = totalCount,
                 };
             },
-            tags: ["departments:list"],
+            tags: [CacheTags.DEPARTMENTS_LIST],
             cancellationToken: cancellationToken);
 
         return response;

@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using Dapper;
 using DirectoryService.Application.Abstractions;
+using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
 using DirectoryService.Application.Validation;
 using DirectoryService.Contracts.Departments;
@@ -195,7 +196,7 @@ public class GetRootsWithFirstNChildrenQueryHandler :
                 };
             },
             options: new HybridCacheEntryOptions(),
-            tags: ["departments:list"],
+            tags: [CacheTags.DEPARTMENTS_LIST],
             cancellationToken: cancellationToken);
 
         _logger.LogInformation(

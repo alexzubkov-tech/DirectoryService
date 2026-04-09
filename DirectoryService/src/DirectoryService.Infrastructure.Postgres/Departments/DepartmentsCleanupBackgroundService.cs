@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
 using DirectoryService.Contracts.Departments;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -163,16 +164,16 @@ public sealed class DepartmentsCleanupBackgroundService : BackgroundService
                 return;
             }
 
-            await _cache.RemoveByTagAsync("departments:list", cancellationToken);
+            await _cache.RemoveByTagAsync(CacheTags.DEPARTMENTS_LIST, cancellationToken);
 
             _logger.LogInformation(
                 "Cache invalidated by tag {CacheTag} after departments cleanup.",
-                "departments:list");
+                CacheTags.DEPARTMENTS_LIST);
 
             _logger.LogInformation(
                 "Cleanup completed. Deleted {Count} departments. Cache invalidated by tag {CacheTag}.",
                 deletedCount,
-                "departments:list");
+                CacheTags.DEPARTMENTS_LIST);
         }
         catch (Exception ex)
         {

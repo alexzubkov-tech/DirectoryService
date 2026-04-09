@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using Dapper;
 using DirectoryService.Application.Abstractions;
+using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
 using DirectoryService.Contracts.Departments;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -50,7 +51,7 @@ public class GetTopFiveDepartmentsByPositionsQueryHandler :
 
                 return result.ToList();
             },
-            tags: ["departments:list"],
+            tags: [CacheTags.DEPARTMENTS_LIST],
             cancellationToken: cancellationToken);
 
         return response;

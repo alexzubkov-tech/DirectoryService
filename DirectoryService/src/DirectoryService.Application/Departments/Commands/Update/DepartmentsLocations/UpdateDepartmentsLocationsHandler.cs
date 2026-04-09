@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Abstractions;
+using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
 using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Application.ReferenceValidation;
@@ -108,7 +109,7 @@ public class UpdateDepartmentsLocationsHandler : ICommandHandler<UpdateDepartmen
             return commitedResult.Error.ToErrors();
         }
 
-        await _cache.RemoveByTagAsync(["departments:list"], cancellationToken);
+        await _cache.RemoveByTagAsync(CacheTags.DEPARTMENTS_LIST, cancellationToken);
 
         _logger.LogInformation("Локации отдела успешно обновлены");
 
