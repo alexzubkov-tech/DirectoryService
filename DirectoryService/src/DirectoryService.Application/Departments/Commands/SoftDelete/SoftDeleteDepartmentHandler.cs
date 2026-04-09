@@ -1,9 +1,10 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Abstractions;
+using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
-using DirectoryService.Application.Departments.Commands.Create;
 using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Domain.Departments.ValueObjects;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using Shared;
 
@@ -13,16 +14,19 @@ public class SoftDeleteDepartmentHandler : ICommandHandler<SoftDeleteDepartmentC
 {
     private readonly IDepartmentsRepository _departmentsRepository;
     private readonly ITransactionManager _transactionManager;
-    private ILogger<SoftDeleteDepartmentHandler> _logger;
+    private readonly ILogger<SoftDeleteDepartmentHandler> _logger;
+    private readonly HybridCache _cache;
 
     public SoftDeleteDepartmentHandler(
         IDepartmentsRepository departmentsRepository,
         ITransactionManager transactionManager,
-        ILogger<SoftDeleteDepartmentHandler> logger)
+        ILogger<SoftDeleteDepartmentHandler> logger,
+        HybridCache cache)
     {
         _departmentsRepository = departmentsRepository;
         _transactionManager = transactionManager;
         _logger = logger;
+        _cache = cache;
     }
 
     public async Task<UnitResult<Errors>> Handle(
@@ -94,6 +98,8 @@ public class SoftDeleteDepartmentHandler : ICommandHandler<SoftDeleteDepartmentC
         {
             return committedResult.Error.ToErrors();
         }
+
+        await _cache.RemoveByTagAsync(CacheTags.DEPARTMENTS_LIST, cancellationToken);
 
         _logger.LogInformation(
             "Отдел {DepartmentName} (Id: {DepartmentId}) успешно soft удален",
