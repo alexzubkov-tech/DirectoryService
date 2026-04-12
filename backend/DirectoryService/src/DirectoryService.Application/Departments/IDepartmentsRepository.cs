@@ -2,7 +2,7 @@
 using CSharpFunctionalExtensions;
 using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Departments.ValueObjects;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Application.Departments;
 

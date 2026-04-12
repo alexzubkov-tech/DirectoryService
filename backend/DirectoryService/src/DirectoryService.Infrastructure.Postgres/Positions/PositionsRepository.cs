@@ -3,13 +3,11 @@ using CSharpFunctionalExtensions;
 using DirectoryService.Application.Positions;
 using DirectoryService.Application.Positions.Fails;
 using DirectoryService.Domain.Positions;
-using DirectoryService.Domain.Positions.Errors;
-using DirectoryService.Domain.Positions.ValueObjects;
 using DirectoryService.Infrastructure.Positions.Errors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Infrastructure.Positions;
 

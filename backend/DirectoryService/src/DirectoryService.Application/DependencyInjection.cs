@@ -1,4 +1,4 @@
-﻿using DirectoryService.Application.Abstractions;
+﻿using Core.Abstractions;
 using DirectoryService.Application.Common.Options;
 using DirectoryService.Application.ReferenceValidation;
 using FluentValidation;
@@ -14,23 +14,11 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddHandlers(typeof(DependencyInjection).Assembly);
+
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
         services.AddScoped<IReferenceValidator, ReferenceValidator>();
-
-        var assembly = typeof(DependencyInjection).Assembly;
-
-        services.Scan(scan => scan.FromAssemblies(assembly)
-            .AddClasses(classes => classes
-                .AssignableToAny(typeof(ICommandHandler<,>), typeof(ICommandHandler<>)))
-            .AsSelfWithInterfaces()
-            .WithScopedLifetime());
-
-        services.Scan(scan => scan.FromAssemblies(assembly)
-            .AddClasses(classes => classes
-                .AssignableToAny(typeof(IQueryHandler<,>)))
-            .AsSelfWithInterfaces()
-            .WithScopedLifetime());
 
         // Регистрация Options Pattern
         services.Configure<RedisOptions>(options =>

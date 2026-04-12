@@ -2,6 +2,7 @@
 using DirectoryService.Contracts.Departments;
 using DirectoryService.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Shared.SharedKernel;
 
 namespace DirectoryService.IntegrationTests.Departments.Caching;
 
@@ -106,7 +107,7 @@ public class GetRootsWithFirstNChildrenCachingTests : CacheTestBase
         Assert.Equal(1, secondResult.Value.TotalCount);
     }
 
-    private async Task<CSharpFunctionalExtensions.Result<GetRootsWithFirstNChildrenResponse, Shared.Errors>> GetRoots(GetRootsWithFirstNChildrenRequest request)
+    private async Task<CSharpFunctionalExtensions.Result<GetRootsWithFirstNChildrenResponse, Errors>> GetRoots(GetRootsWithFirstNChildrenRequest request)
     {
         await using var scope = Services.CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetRootsWithFirstNChildrenQueryHandler>();

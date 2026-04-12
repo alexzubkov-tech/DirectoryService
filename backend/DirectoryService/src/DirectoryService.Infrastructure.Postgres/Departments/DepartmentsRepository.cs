@@ -8,7 +8,7 @@ using DirectoryService.Infrastructure.Departments.Errors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Infrastructure.Departments;
 

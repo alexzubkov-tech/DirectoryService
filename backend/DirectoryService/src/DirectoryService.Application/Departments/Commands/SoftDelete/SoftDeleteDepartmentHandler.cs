@@ -1,12 +1,12 @@
-﻿using CSharpFunctionalExtensions;
-using DirectoryService.Application.Abstractions;
+﻿using Core.Abstractions;
+using CSharpFunctionalExtensions;
 using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
 using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Domain.Departments.ValueObjects;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Application.Departments.Commands.SoftDelete;
 

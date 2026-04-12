@@ -1,5 +1,5 @@
-﻿using DirectoryService.Application.Common.Errors;
-using DirectoryService.Application.Validation;
+﻿using Core.Validation;
+using DirectoryService.Application.Common.Errors;
 using FluentValidation;
 
 namespace DirectoryService.Application.Departments.Queries.RootsWithFirstNChildren;

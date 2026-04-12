@@ -1,13 +1,13 @@
-﻿using CSharpFunctionalExtensions;
-using DirectoryService.Application.Abstractions;
+﻿using Core.Abstractions;
+using Core.Validation;
+using CSharpFunctionalExtensions;
 using DirectoryService.Application.Database;
-using DirectoryService.Application.Validation;
 using DirectoryService.Contracts.Departments;
 using DirectoryService.Contracts.Locations;
 using DirectoryService.Domain.Departments.ValueObjects;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Application.Locations.Queries.Get;
 

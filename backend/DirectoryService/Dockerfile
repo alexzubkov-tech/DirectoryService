@@ -1,11 +1,22 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 USER $APP_UID
+
 WORKDIR /app
 EXPOSE 8001
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
+ARG NUGET_USERNAME
+ARG NUGET_PASSWORD
 WORKDIR /src
+
+RUN dotnet nuget add source "https://nuget.pkg.github.com/alexzubkov-tech/index.json" \
+    --name github \
+    --username "$NUGET_USERNAME" \
+    --password "$NUGET_PASSWORD" \
+    --store-password-in-clear-text
+
+COPY [".editorconfig", "."]
 
 COPY ["DirectoryService.sln", "."]
 COPY ["Directory.Build.props", "."]
@@ -16,7 +27,6 @@ COPY ["src/DirectoryService.Domain/DirectoryService.Domain.csproj", "src/Directo
 COPY ["src/DirectoryService.Infrastructure.Postgres/DirectoryService.Infrastructure.Postgres.csproj", "src/DirectoryService.Infrastructure.Postgres/"]
 COPY ["src/DirectoryService.Contracts/DirectoryService.Contracts.csproj", "src/DirectoryService.Contracts/"]
 COPY ["src/DirectoryService.Presenters/DirectoryService.Presenters.csproj", "src/DirectoryService.Presenters/"]
-COPY ["src/Shared/Shared.csproj", "src/Shared/"]
 
 RUN dotnet restore "src/DirectoryService.Web/DirectoryService.Web.csproj"
 

@@ -4,7 +4,7 @@ using DirectoryService.Domain.DepartmentPositions;
 using DirectoryService.Domain.Departments.Errors;
 using DirectoryService.Domain.Departments.ValueObjects;
 using DirectoryService.Domain.Locations.ValueObjects;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Domain.Departments;
 

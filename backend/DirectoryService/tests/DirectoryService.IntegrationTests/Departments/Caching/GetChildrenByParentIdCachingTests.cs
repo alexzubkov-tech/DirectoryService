@@ -2,6 +2,7 @@
 using DirectoryService.Contracts.Departments;
 using DirectoryService.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Shared.SharedKernel;
 
 namespace DirectoryService.IntegrationTests.Departments.Caching;
 
@@ -162,7 +163,7 @@ public class GetChildrenByParentIdCachingTests : CacheTestBase
         Assert.True(result.IsFailure);
     }
 
-    private async Task<CSharpFunctionalExtensions.Result<GetChildrenByParentIdResponse, Shared.Errors>> GetChildren(
+    private async Task<CSharpFunctionalExtensions.Result<GetChildrenByParentIdResponse, Errors>> GetChildren(
         Guid parentId,
         GetChildrenByParentIdRequest request)
     {

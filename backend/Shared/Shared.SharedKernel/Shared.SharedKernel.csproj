@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+        <PackageReference Include="CSharpFunctionalExtensions" Version="3.6.0" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+      <PackageId>ZubkovTech.SharedKernel</PackageId>
+      <Version>0.0.3</Version>
+      <Authors>ZubkovTech</Authors>
+      <Company>ZubkovTech</Company>
+      <PackageDescription>SharedKernel</PackageDescription>
+      <RepositoryUrl>https://github.com/alexzubkov-tech/DirectoryService</RepositoryUrl>
+    </PropertyGroup>
+</Project>

@@ -1,11 +1,8 @@
 ﻿using DirectoryService.Application.Departments.Commands.Update.DepartmentParent;
 using DirectoryService.Application.Departments.Commands.Update.DepartmentsLocations;
-using DirectoryService.Application.Departments.Queries.GetChildrenByParentId;
-using DirectoryService.Application.Departments.Queries.RootsWithFirstNChildren;
 using DirectoryService.Contracts.Departments;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
-using StackExchange.Redis;
 
 namespace DirectoryService.IntegrationTests.Infrastructure;
 

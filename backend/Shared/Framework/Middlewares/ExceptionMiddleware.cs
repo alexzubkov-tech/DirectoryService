@@ -1,0 +1,63 @@
+﻿using System.Text.Json;
+using Framework.Exceptions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Shared.SharedKernel;
+using ValidationException = System.ComponentModel.DataAnnotations.ValidationException;
+
+namespace Framework.Middlewares;
+
+public class ExceptionMiddleware
+{
+    private readonly RequestDelegate _next;
+    private readonly ILogger<ExceptionMiddleware> _logger;
+
+    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+    {
+        _logger = logger;
+        _next = next;
+    }
+
+    public async Task InvokeAsync(HttpContext httpContext)
+    {
+        try
+        {
+            await _next(httpContext);
+        }
+        catch (Exception ex)
+        {
+            await HandleExceptionAsync(httpContext, ex);
+        }
+    }
+
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    {
+        _logger.LogError(exception, exception.Message);
+
+        (int code, Error[]? errors) = exception switch
+        {
+            ValidationException => (
+                StatusCodes.Status400BadRequest, JsonSerializer.Deserialize<Error[]>(exception.Message)),
+
+            ConflictException => (
+                StatusCodes.Status409Conflict, JsonSerializer.Deserialize<Error[]>(exception.Message)),
+
+            FailureException => (
+                StatusCodes.Status500InternalServerError, JsonSerializer.Deserialize<Error[]>(exception.Message)),
+
+            BadRequestException => (
+                StatusCodes.Status500InternalServerError, JsonSerializer.Deserialize<Error[]>(exception.Message)),
+
+            NotFoundException => (
+                StatusCodes.Status404NotFound, JsonSerializer.Deserialize<Error[]>(exception.Message)),
+
+            _ => (StatusCodes.Status500InternalServerError, [Error.Failure(null, "Something went wrong")]),
+        };
+
+        var envelope = Envelope.Error(errors);
+        context.Response.ContentType = "application/json";
+        context.Response.StatusCode = code;
+
+        await context.Response.WriteAsJsonAsync(envelope);
+    }
+}

@@ -1,4 +1,4 @@
-﻿using DirectoryService.Application.Validation;
+﻿using Core.Validation;
 using DirectoryService.Domain.Locations.ValueObjects;
 using FluentValidation;
 

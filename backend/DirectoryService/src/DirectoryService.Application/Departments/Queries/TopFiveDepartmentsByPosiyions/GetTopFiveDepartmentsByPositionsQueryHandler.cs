@@ -1,11 +1,11 @@
-﻿using CSharpFunctionalExtensions;
+﻿using Core.Abstractions;
+using CSharpFunctionalExtensions;
 using Dapper;
-using DirectoryService.Application.Abstractions;
 using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
 using DirectoryService.Contracts.Departments;
 using Microsoft.Extensions.Caching.Hybrid;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Application.Departments.Queries.TopFiveDepartmentsByPosiyions;
 
