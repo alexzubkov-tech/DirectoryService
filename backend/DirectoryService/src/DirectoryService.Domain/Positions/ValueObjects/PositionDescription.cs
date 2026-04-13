@@ -1,8 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using CSharpFunctionalExtensions;
 using DirectoryService.Domain.Positions.Errors;
-using Shared;
-using Shared.Extensions;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Domain.Positions.ValueObjects;
 

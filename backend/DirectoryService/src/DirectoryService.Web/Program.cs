@@ -1,6 +1,5 @@
 using System.Globalization;
 using DirectoryService.Web;
-using DirectoryService.Web.Configuration;
 using Serilog;
 
 if (Log.Logger == null)

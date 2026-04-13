@@ -1,9 +1,9 @@
-﻿using DirectoryService.Application.Abstractions;
+﻿using Core.Abstractions;
 using DirectoryService.Application.Locations.Commands.Create;
 using DirectoryService.Application.Locations.Queries.GetDapper;
 using DirectoryService.Contracts.Locations;
-using DirectoryService.Presenters.Controllers;
-using DirectoryService.Presenters.ResponseExtensions;
+using Framework.Controllers;
+using Framework.ResponseExtensions;
 using Microsoft.AspNetCore.Mvc;
 using GetLocationsQuery = DirectoryService.Application.Locations.Queries.Get.GetLocationsQuery;
 

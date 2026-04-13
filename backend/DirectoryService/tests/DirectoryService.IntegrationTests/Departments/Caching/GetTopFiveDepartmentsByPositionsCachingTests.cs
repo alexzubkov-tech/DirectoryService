@@ -2,6 +2,7 @@
 using DirectoryService.Contracts.Departments;
 using DirectoryService.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Shared.SharedKernel;
 
 namespace DirectoryService.IntegrationTests.Departments.Caching;
 
@@ -92,7 +93,7 @@ public class GetTopFiveDepartmentsByPositionsCachingTests : CacheTestBase
         Assert.Single(secondResult.Value);
     }
 
-    private async Task<CSharpFunctionalExtensions.Result<List<GetTopFiveDepartmentsByPositionsResponse>, Shared.Errors>> GetTopFive()
+    private async Task<CSharpFunctionalExtensions.Result<List<GetTopFiveDepartmentsByPositionsResponse>, Errors>> GetTopFive()
     {
         await using var scope = Services.CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<GetTopFiveDepartmentsByPositionsQueryHandler>();

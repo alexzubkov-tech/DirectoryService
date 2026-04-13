@@ -1,15 +1,14 @@
-﻿using DirectoryService.Application.Abstractions;
+﻿using Core.Abstractions;
 using DirectoryService.Application.Departments.Commands.Create;
 using DirectoryService.Application.Departments.Commands.SoftDelete;
 using DirectoryService.Application.Departments.Commands.Update.DepartmentParent;
 using DirectoryService.Application.Departments.Commands.Update.DepartmentsLocations;
-using DirectoryService.Application.Departments.Queries;
 using DirectoryService.Application.Departments.Queries.GetChildrenByParentId;
 using DirectoryService.Application.Departments.Queries.RootsWithFirstNChildren;
 using DirectoryService.Application.Departments.Queries.TopFiveDepartmentsByPosiyions;
 using DirectoryService.Contracts.Departments;
-using DirectoryService.Presenters.Controllers;
-using DirectoryService.Presenters.ResponseExtensions;
+using Framework.Controllers;
+using Framework.ResponseExtensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DirectoryService.Presenters.Departments;

@@ -3,7 +3,7 @@ using DirectoryService.Application.Departments;
 using DirectoryService.Application.Departments.Fails;
 using DirectoryService.Application.Locations;
 using DirectoryService.Application.Locations.Fails;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Application.ReferenceValidation;
 

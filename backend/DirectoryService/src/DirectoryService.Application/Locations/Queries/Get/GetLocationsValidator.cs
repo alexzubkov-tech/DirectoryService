@@ -1,8 +1,7 @@
-﻿using DirectoryService.Application.Locations.Fails;
-using DirectoryService.Application.Validation;
-using DirectoryService.Contracts.Locations;
+﻿using Core.Validation;
+using DirectoryService.Application.Locations.Fails;
 using FluentValidation;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Application.Locations.Queries.Get;
 

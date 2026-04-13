@@ -1,8 +1,7 @@
 ﻿using System.Linq.Expressions;
 using CSharpFunctionalExtensions;
 using DirectoryService.Domain.Locations;
-using DirectoryService.Domain.Locations.ValueObjects;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Application.Locations;
 

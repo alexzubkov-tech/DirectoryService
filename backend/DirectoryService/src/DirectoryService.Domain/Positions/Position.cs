@@ -1,10 +1,9 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Domain.DepartmentPositions;
-using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Departments.ValueObjects;
 using DirectoryService.Domain.Positions.Errors;
 using DirectoryService.Domain.Positions.ValueObjects;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Domain.Positions;
 

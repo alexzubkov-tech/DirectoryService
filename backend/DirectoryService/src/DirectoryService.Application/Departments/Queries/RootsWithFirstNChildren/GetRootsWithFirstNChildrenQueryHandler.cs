@@ -1,14 +1,14 @@
-﻿using CSharpFunctionalExtensions;
+﻿using Core.Abstractions;
+using Core.Validation;
+using CSharpFunctionalExtensions;
 using Dapper;
-using DirectoryService.Application.Abstractions;
 using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Database;
-using DirectoryService.Application.Validation;
 using DirectoryService.Contracts.Departments;
 using FluentValidation;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Application.Departments.Queries.RootsWithFirstNChildren;
 

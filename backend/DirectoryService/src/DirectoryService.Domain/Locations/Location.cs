@@ -1,8 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Domain.DepartmentLocations;
-using DirectoryService.Domain.Departments;
 using DirectoryService.Domain.Locations.ValueObjects;
-using Shared;
+using Shared.SharedKernel;
 
 namespace DirectoryService.Domain.Locations;
 

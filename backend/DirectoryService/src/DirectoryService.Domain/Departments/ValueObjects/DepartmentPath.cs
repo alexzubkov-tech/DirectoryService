@@ -1,6 +1,4 @@
-﻿using CSharpFunctionalExtensions;
-
-namespace DirectoryService.Domain.Departments.ValueObjects;
+﻿namespace DirectoryService.Domain.Departments.ValueObjects;
 
 public sealed record DepartmentPath
 {

@@ -1,9 +1,7 @@
 ﻿using DirectoryService.Application;
 using DirectoryService.Infrastructure;
-using DirectoryService.Web.Configuration.Swagger;
-using Microsoft.OpenApi.Models;
-using Serilog;
-using Serilog.Exceptions;
+using Framework.Logging;
+using Framework.Swagger;
 
 namespace DirectoryService.Web;
 
@@ -13,7 +11,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration) =>
         services
-            .AddSerilogLogging(configuration)
+            .AddSerilogLogging(configuration, "DirectoryService")
             .AddWebDependencies()
             .AddApplication(configuration)
             .AddInfrastructurePostgres(configuration);
@@ -21,30 +19,7 @@ public static class DependencyInjection
     private static IServiceCollection AddWebDependencies(this IServiceCollection services)
     {
         services.AddControllers();
-
-        services.AddEndpointsApiExplorer();
-
-        services.AddSwaggerGen(options =>
-        {
-            options.SwaggerDoc("v1", new OpenApiInfo
-            {
-                Title = "Directory Service API",
-                Version = "v1",
-            });
-            options.SchemaFilter<EnvelopeErrorsSchemaFilter>();
-        });
-
-        return services;
-    }
-
-    private static IServiceCollection AddSerilogLogging(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddSerilog((sp, lc) => lc
-            .ReadFrom.Configuration(configuration)
-            .ReadFrom.Services(sp)
-            .Enrich.FromLogContext()
-            .Enrich.WithExceptionDetails()
-            .Enrich.WithProperty("ServiceName", "DepartmentService"));
+        services.AddSwaggerConfiguration("Directory Service API");
 
         return services;
     }

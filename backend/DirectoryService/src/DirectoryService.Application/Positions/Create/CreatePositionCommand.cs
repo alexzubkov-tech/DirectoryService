@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices.ComTypes;
-using DirectoryService.Application.Abstractions;
+﻿using Core.Abstractions;
 using DirectoryService.Contracts.Positions;
 
 namespace DirectoryService.Application.Positions.Create;

@@ -1,4 +1,4 @@
-﻿using Shared;
+﻿using Shared.SharedKernel;
 
 namespace DirectoryService.Application.Departments.Fails;
 

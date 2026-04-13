@@ -5,7 +5,7 @@ using DirectoryService.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DirectoryService.IntegrationTests.Departments;
+namespace DirectoryService.IntegrationTests.Departments.Commands;
 
 [Collection("Sequential")]
 public class CreateDepartmentTests(DirectoryTestWebFactory factory) : DirectoryServiceBaseTests(factory)
