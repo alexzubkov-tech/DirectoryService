@@ -19,7 +19,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar";
+} from "@/shared/components/ui/sidebar";
 
 const menuItems = [
   { href: routes.home, label: "Главная", icon: House },

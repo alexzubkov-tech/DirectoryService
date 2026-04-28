@@ -11,6 +11,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration) =>
         services
+            .AddCors()
             .AddSerilogLogging(configuration, "DirectoryService")
             .AddWebDependencies()
             .AddApplication(configuration)
