@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
-import { cn } from "@/lib/utils";
-import Header from "@/components/header/header";
-import { AppSidebar } from "@/components/sidebar/app.sidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { cn } from "@/shared/lib/utils";
+import Header from "@/features/header/header";
+import { AppSidebar } from "@/features/sidebar/app.sidebar";
+import { SidebarInset, SidebarProvider } from "@/shared/components/ui/sidebar";
 
 const inter = Inter({
   subsets: ["latin"],

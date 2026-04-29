@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FolderTree } from "lucide-react";
 import { routes } from "@/shared/routes";
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { SidebarTrigger, useSidebar } from "@/shared/components/ui/sidebar";
 
 export default function Header() {
   const { isMobile } = useSidebar();

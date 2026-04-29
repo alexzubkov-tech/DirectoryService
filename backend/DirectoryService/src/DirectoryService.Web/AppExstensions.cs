@@ -7,6 +7,14 @@ public static class AppExstensions
 {
     public static IApplicationBuilder UseWebConfiguration(this WebApplication app)
     {
+        app.UseCors(builder =>
+        {
+            builder.WithOrigins("http://localhost:3000")
+                .AllowCredentials()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+
         app.UseExceptionMiddleware();
         app.UseSerilogRequestLogging();
 
