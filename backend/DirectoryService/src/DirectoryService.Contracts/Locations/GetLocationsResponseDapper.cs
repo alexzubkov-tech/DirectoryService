@@ -1,8 +1,9 @@
 ﻿namespace DirectoryService.Contracts.Locations;
 
 public record GetLocationsResponseDapper
-{
-    public IReadOnlyList<LocationDtoDapper> Items { get; init; } = null!;
-
-    public long TotalCount { get; init; }
-}
+(
+    IReadOnlyList<LocationDtoDapper> Items,
+    long TotalCount,
+    int Page,
+    int PageSize,
+    int TotalPages);

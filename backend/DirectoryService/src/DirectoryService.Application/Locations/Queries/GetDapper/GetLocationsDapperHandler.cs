@@ -33,8 +33,9 @@ public class GetLocationsDapperHandler
             return validationResult.ToListError();
 
         var request = query.Request;
-        int page = request.Pagination?.Page ?? 1;
-        int pageSize = request.Pagination?.PageSize ?? 20;
+
+        int page = request.Page;
+        int pageSize = request.PageSize;
         int offset = (page - 1) * pageSize;
 
         var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
@@ -49,7 +50,7 @@ public class GetLocationsDapperHandler
         };
 
         const string countSql = """
-                                SELECT COUNT(DISTINCT l.location_id )
+                                SELECT COUNT(DISTINCT l.location_id)
                                 FROM locations l
                                 LEFT JOIN department_locations dl ON dl.location_id = l.location_id
                                 WHERE
@@ -62,6 +63,10 @@ public class GetLocationsDapperHandler
                                 """;
 
         long totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
+
+        int totalPages = totalCount == 0
+            ? 1
+            : (int)Math.Ceiling(totalCount / (double)pageSize);
 
         const string dataSql = """
                                WITH filtered_locations AS (
@@ -112,7 +117,6 @@ public class GetLocationsDapperHandler
             splitOn: "Id",
             map: (location, department) =>
             {
-                // пока не знаю как по другому смаппить
                 if (!locationsDict.TryGetValue(location.Id, out var existingLocation))
                 {
                     existingLocation = new LocationDtoDapper
@@ -127,6 +131,7 @@ public class GetLocationsDapperHandler
                         CreatedAt = location.CreatedAt,
                         Departments = new List<DepartmentInfoDto>(),
                     };
+
                     locationsDict[existingLocation.Id] = existingLocation;
                 }
 
@@ -138,10 +143,13 @@ public class GetLocationsDapperHandler
                 return existingLocation;
             });
 
-        var response = new GetLocationsResponseDapper
-        {
-            Items = locationsDict.Values.ToList(), TotalCount = totalCount,
-        };
+        var response = new GetLocationsResponseDapper(
+            Items: locationsDict.Values.ToList(),
+            TotalCount: totalCount,
+            Page: page,
+            PageSize: pageSize,
+            TotalPages: totalPages
+        );
 
         return response;
     }

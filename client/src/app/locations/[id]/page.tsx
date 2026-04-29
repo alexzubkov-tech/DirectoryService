@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Building2,
@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Clock,
   Navigation,
-  XCircle,
 } from "lucide-react";
 
 import { locationsApi } from "@/entities/locations/api";
@@ -31,15 +30,11 @@ function getFullAddressText(location: Location) {
 }
 
 function getCreatedAtText(createdAt: string) {
-  if (!createdAt) {
-    return "Не указано";
-  }
+  if (!createdAt) return "Не указано";
 
   const date = new Date(createdAt);
 
-  if (Number.isNaN(date.getTime())) {
-    return "Не указано";
-  }
+  if (Number.isNaN(date.getTime())) return "Не указано";
 
   return date.toLocaleDateString("ru-RU", {
     day: "2-digit",
@@ -48,68 +43,46 @@ function getCreatedAtText(createdAt: string) {
   });
 }
 
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Не удалось загрузить локацию";
-}
-
 export default function LocationDetailsPage() {
   const params = useParams<{ id: string }>();
   const locationId = params.id;
 
-  const [location, setLocation] = useState<Location | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryParams = {
+    page: 1,
+    pageSize: PAGE_SIZE,
+    search: "",
+    isActive: IS_ACTIVE_FILTER,
+    departmentIds: [] as string[],
+  };
 
-  useEffect(() => {
-    let isActual = true;
+  const {
+    data: location,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["location", locationId, queryParams],
+    queryFn: async () => {
+     const response = await locationsApi.getLocations({
+  departmentIds: queryParams.departmentIds,
+  search: queryParams.search,
+  isActive: queryParams.isActive,
+  page: queryParams.page,
+  pageSize: queryParams.pageSize,
+});
 
-    locationsApi
-      .getLocations({
-        departmentIds: [],
-        search: "",
-        isActive: IS_ACTIVE_FILTER,
-        paginationRequest: {
-          page: 1,
-          pageSize: PAGE_SIZE,
-        },
-      })
-      .then((locations) => {
-        if (!isActual) {
-          return;
-        }
+      const currentLocation = response.items.find(
+        (item) => item.id === locationId
+      );
 
-        const currentLocation = locations.find((item) => item.id === locationId);
+      if (!currentLocation) {
+        throw new Error("Локация не найдена в полученном списке");
+      }
 
-        if (!currentLocation) {
-          setError("Локация не найдена в полученном списке");
-          return;
-        }
-
-        setLocation(currentLocation);
-      })
-      .catch((error: unknown) => {
-        if (!isActual) {
-          return;
-        }
-
-        setError(getErrorMessage(error));
-      })
-      .finally(() => {
-        if (!isActual) {
-          return;
-        }
-
-        setIsLoading(false);
-      });
-
-    return () => {
-      isActual = false;
-    };
-  }, [locationId]);
+      return currentLocation;
+    },
+    enabled: Boolean(locationId),
+  });
 
   if (isLoading) {
     return (
@@ -122,7 +95,7 @@ export default function LocationDetailsPage() {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <section className="rounded-3xl border border-red-950/70 bg-[#111816] p-6 sm:p-8 lg:p-10">
         <Link
@@ -142,32 +115,16 @@ export default function LocationDetailsPage() {
         </h1>
 
         <p className="mt-4 max-w-3xl text-base leading-7 text-stone-300 sm:text-lg">
-          {error}
+          {error instanceof Error
+            ? error.message
+            : "Не удалось загрузить локацию"}
         </p>
       </section>
     );
   }
 
   if (!location) {
-    return (
-      <section className="rounded-3xl border border-[#2f281f] bg-[#111816] p-6 sm:p-8 lg:p-10">
-        <Link
-          href="/locations"
-          className="inline-flex items-center gap-2 text-base text-stone-400 transition hover:text-white"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Назад к списку локаций
-        </Link>
-
-        <h1 className="mt-6 text-3xl font-semibold text-stone-50 sm:text-4xl">
-          Локация не найдена
-        </h1>
-
-        <p className="mt-4 text-base leading-7 text-stone-400">
-          Данные по выбранной локации не удалось найти в списке.
-        </p>
-      </section>
-    );
+    return null;
   }
 
   return (
@@ -196,17 +153,10 @@ export default function LocationDetailsPage() {
             </p>
           </div>
 
-          {IS_ACTIVE_FILTER ? (
-            <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-emerald-900/60 bg-emerald-950/40 px-4 py-2 text-base text-emerald-300">
-              <CheckCircle2 className="h-5 w-5" />
-              Активна
-            </span>
-          ) : (
-            <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-red-900/60 bg-red-950/30 px-4 py-2 text-base text-red-300">
-              <XCircle className="h-5 w-5" />
-              Неактивна
-            </span>
-          )}
+          <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-emerald-900/60 bg-emerald-950/40 px-4 py-2 text-base text-emerald-300">
+            <CheckCircle2 className="h-5 w-5" />
+            Активна
+          </span>
         </div>
       </section>
 
@@ -296,22 +246,12 @@ export default function LocationDetailsPage() {
 
             <article className="rounded-2xl border border-[#2f281f] bg-[#111816] p-5">
               <div className="flex items-center gap-2 text-sm uppercase tracking-[0.16em] text-stone-500">
-                {IS_ACTIVE_FILTER ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <XCircle className="h-4 w-4" />
-                )}
+                <CheckCircle2 className="h-4 w-4" />
                 активность
               </div>
 
-              <div
-                className={
-                  IS_ACTIVE_FILTER
-                    ? "mt-3 text-xl font-semibold text-emerald-300"
-                    : "mt-3 text-xl font-semibold text-red-300"
-                }
-              >
-                {IS_ACTIVE_FILTER ? "Активна" : "Неактивна"}
+              <div className="mt-3 text-xl font-semibold text-emerald-300">
+                Активна
               </div>
             </article>
           </div>
