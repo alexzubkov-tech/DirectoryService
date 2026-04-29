@@ -31,8 +31,9 @@ public class GetLocationsHandler : IQueryHandler<GetLocationsResponse, GetLocati
             return validationResult.ToListError();
 
         var request = query.Request;
-        int page = request.Pagination?.Page ?? 1;
-        int pageSize = request.Pagination?.PageSize ?? 20;
+
+        int page = request.Page;
+        int pageSize = request.PageSize;
 
         var filteredQuery = _context.LocationsRead.AsNoTracking();
 
@@ -42,19 +43,27 @@ public class GetLocationsHandler : IQueryHandler<GetLocationsResponse, GetLocati
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             string search = request.Search.ToLower();
+
             filteredQuery = filteredQuery
                 .Where(l => EF.Functions.Like(l.LocationName.Value.ToLower(), $"%{search}%"));
         }
 
         if (request.DepartmentIds is { Length: > 0 })
         {
-            var departmentIdObjects = request.DepartmentIds.Select(id => new DepartmentId(id)).ToArray();
+            var departmentIdObjects = request.DepartmentIds
+                .Select(id => new DepartmentId(id))
+                .ToArray();
+
             filteredQuery = filteredQuery
                 .Where(l => l.DepartmentLocations
                     .Any(dl => departmentIdObjects.Contains(dl.DepartmentId)));
         }
 
-        int totalCount = await filteredQuery.CountAsync(cancellationToken);
+        long totalCount = await filteredQuery.LongCountAsync(cancellationToken);
+
+        int totalPages = totalCount == 0
+            ? 1
+            : (int)Math.Ceiling(totalCount / (double)pageSize);
 
         var items = await filteredQuery
             .OrderBy(l => l.CreatedAt)
@@ -74,22 +83,26 @@ public class GetLocationsHandler : IQueryHandler<GetLocationsResponse, GetLocati
                 },
                 TimeZone = l.Timezone.Value,
                 CreatedAt = l.CreatedAt,
-                Departments = (from dl in _context.DepartmentLocationsRead
-                               join d in _context.DepartmentsRead on dl.DepartmentId equals d.Id
-                               where dl.LocationId == l.Id
-                               select new DepartmentInfoDto
-                               {
-                                   Id = d.Id.Value,
-                                   Identificator = d.DepartmentIdentifier.Value,
-                               }).ToList(),
+                Departments = (
+                    from dl in _context.DepartmentLocationsRead
+                    join d in _context.DepartmentsRead on dl.DepartmentId equals d.Id
+                    where dl.LocationId == l.Id
+                    select new DepartmentInfoDto
+                    {
+                        Id = d.Id.Value,
+                        Identificator = d.DepartmentIdentifier.Value,
+                    }
+                ).ToList(),
             })
             .ToListAsync(cancellationToken);
 
-        var response = new GetLocationsResponse
-        {
-            Items = items,
-            TotalCount = totalCount,
-        };
+        var response = new GetLocationsResponse(
+            Items: items,
+            TotalCount: totalCount,
+            Page: page,
+            PageSize: pageSize,
+            TotalPages: totalPages
+        );
 
         return Result.Success<GetLocationsResponse, Errors>(response);
     }

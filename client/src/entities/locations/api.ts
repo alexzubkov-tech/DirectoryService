@@ -1,5 +1,6 @@
 import { apiClient } from "@/shared/api/axios-instance";
 import type { Location } from "@/entities/locations/types";
+import type { PaginationResponse } from "@/shared/api/types";
 
 export type CreateLocationRequest = {
     name: string;
@@ -9,10 +10,6 @@ export type GetLocationsRequest = {
     departmentIds?: string[];
     search?: string;
     isActive: boolean;
-    paginationRequest: PaginationRequest;
-};
-
-export type PaginationRequest = {
     page: number;
     pageSize: number;
 };
@@ -37,25 +34,32 @@ export type ErrorMessage = {
 
 export type ErrorType = "validation" | "not_found" | "failure" | "conflict";
 
-export type GetLocationsResponse = {
-    items: Location[];
-    totalCount: number;
-};
-
 export const locationsApi = {
-    getLocations: async (request: GetLocationsRequest): Promise<Location[]> => {
-        const response = await apiClient.get<Envelope<GetLocationsResponse>>(
-            "/locations",
-            {
-                params: request,
-            },
-        );
+    getLocations: async (
+        request: GetLocationsRequest,
+    ): Promise<PaginationResponse<Location>> => {
+        const response = await apiClient.get<
+            Envelope<PaginationResponse<Location>>
+        >("/locations", {
+            params: request,
+        });
 
         if (response.data.isError) {
-            throw new Error("Не удалось получить список локаций");
+            throw new Error(
+                response.data.errorList?.[0]?.messages?.[0]?.message ??
+                    "Не удалось получить список локаций",
+            );
         }
 
-        return response.data.result?.items ?? [];
+        return (
+            response.data.result ?? {
+                items: [],
+                totalCount: 0,
+                page: request.page,
+                pageSize: request.pageSize,
+                totalPages: 1,
+            }
+        );
     },
 
     createLocation: async (
