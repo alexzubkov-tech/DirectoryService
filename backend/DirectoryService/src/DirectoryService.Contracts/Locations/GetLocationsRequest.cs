@@ -8,5 +8,7 @@ public record GetLocationsRequest
 
     public bool? IsActive { get; init; }
 
-    public PaginationRequest? Pagination { get; init; }
+    public int Page { get; init; } = 1;
+
+    public int PageSize { get; init; } = 20;
 }

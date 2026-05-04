@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import axios from "axios";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   Building2,
   CalendarDays,
@@ -10,15 +11,24 @@ import {
   Clock,
   MapPinned,
   Navigation,
+  Search,
   XCircle,
 } from "lucide-react";
 
 import { locationsApi, type ApiError } from "@/entities/locations/api";
 import type { Location } from "@/entities/locations/types";
 import { Spinner } from "@/shared/components/ui/spinner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/shared/components/ui/pagination";
 
-const PAGE_SIZE = 10;
-const IS_ACTIVE_FILTER = true;
+const PAGE_SIZE = 2;
 
 function getFullAddressText(location: Location) {
   const { country, city, street, buildingNumber } = location.address;
@@ -31,15 +41,11 @@ function getFullAddressText(location: Location) {
 }
 
 function getCreatedAtText(createdAt: string) {
-  if (!createdAt) {
-    return "Не указано";
-  }
+  if (!createdAt) return "Не указано";
 
   const date = new Date(createdAt);
 
-  if (Number.isNaN(date.getTime())) {
-    return "Не указано";
-  }
+  if (Number.isNaN(date.getTime())) return "Не указано";
 
   return date.toLocaleDateString("ru-RU", {
     day: "2-digit",
@@ -59,78 +65,93 @@ function getErrorMessage(error: unknown) {
       message?: string;
     }>(error)
   ) {
-    const responseMessage =
+    return (
       error.response?.data?.errorList?.[0]?.messages?.[0]?.message ??
-      error.response?.data?.message;
-
-    return responseMessage ?? error.message ?? "Ошибка запроса к серверу";
+      error.response?.data?.message ??
+      error.message ??
+      "Ошибка запроса к серверу"
+    );
   }
 
-  if (error instanceof Error) {
-    return error.message;
-  }
+  if (error instanceof Error) return error.message;
 
   return "Не удалось загрузить локации";
 }
 
+function getPaginationPages(currentPage: number, totalPages: number) {
+  const pages: Array<number | "..."> = [];
+
+  if (totalPages <= 7) {
+    for (let page = 1; page <= totalPages; page += 1) {
+      pages.push(page);
+    }
+
+    return pages;
+  }
+
+  pages.push(1);
+
+  if (currentPage > 3) {
+    pages.push("...");
+  }
+
+  const startPage = Math.max(2, currentPage - 1);
+  const endPage = Math.min(totalPages - 1, currentPage + 1);
+
+  for (let page = startPage; page <= endPage; page += 1) {
+    pages.push(page);
+  }
+
+  if (currentPage < totalPages - 2) {
+    pages.push("...");
+  }
+
+  pages.push(totalPages);
+
+  return pages;
+}
+
 export default function LocationsPage() {
   const [page, setPage] = useState(1);
-  const [locations, setLocations] = useState<Location[] | null>(null);
+  const [search, setSearch] = useState("");
+  const [isActive, setIsActive] = useState(true);
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isActual = true;
-
-    locationsApi
-      .getLocations({
+  const { data, isLoading, isFetching, error, isError } = useQuery({
+    queryKey: [
+      "locations",
+      {
+        page,
+        pageSize: PAGE_SIZE,
+        search,
+        isActive,
         departmentIds: [],
-        search: "",
-        isActive: IS_ACTIVE_FILTER,
-        paginationRequest: {
-          page,
-          pageSize: PAGE_SIZE,
-        },
-      })
-      .then((data) => {
-        if (!isActual) {
-          return;
-        }
+      },
+    ],
+   queryFn: () =>
+  locationsApi.getLocations({
+    departmentIds: [],
+    search,
+    isActive,
+    page,
+    pageSize: PAGE_SIZE,
+  }),
+    placeholderData: keepPreviousData,
+  });
 
-        setLocations(data);
-      })
-      .catch((error: unknown) => {
-        if (!isActual) {
-          return;
-        }
+  const locations = data?.items ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const currentPage = data?.page ?? page;
+  const currentPageSize = data?.pageSize ?? PAGE_SIZE;
+  const totalPages = data?.totalPages ?? 1;
+  const paginationPages = getPaginationPages(currentPage, totalPages);
 
-        setError(getErrorMessage(error));
-      })
-      .finally(() => {
-        if (!isActual) {
-          return;
-        }
+  function handlePageChange(nextPage: number) {
+    if (nextPage < 1 || nextPage > totalPages || nextPage === currentPage) {
+      return;
+    }
 
-        setIsLoading(false);
-      });
-
-    return () => {
-      isActual = false;
-    };
-  }, [page]);
-
-  const handlePrevPage = () => {
-    setIsLoading(true);
-    setError(null);
-    setPage((current) => Math.max(1, current - 1));
-  };
-
-  const handleNextPage = () => {
-    setIsLoading(true);
-    setError(null);
-    setPage((current) => current + 1);
-  };
+    setPage(nextPage);
+  }
 
   if (isLoading) {
     return (
@@ -143,7 +164,7 @@ export default function LocationsPage() {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <section className="rounded-3xl border border-red-950/70 bg-[#111816] p-6 sm:p-8 lg:p-10">
         <span className="inline-flex rounded-full border border-red-900/60 bg-red-950/30 px-3 py-1 text-sm uppercase tracking-[0.2em] text-red-300">
@@ -155,7 +176,7 @@ export default function LocationsPage() {
         </h1>
 
         <p className="mt-4 max-w-3xl text-base leading-7 text-stone-300 sm:text-lg">
-          {error}
+          {getErrorMessage(error)}
         </p>
       </section>
     );
@@ -175,29 +196,50 @@ export default function LocationsPage() {
             </h1>
 
             <p className="mt-4 max-w-4xl text-base leading-7 text-stone-300 sm:text-lg">
-              В этом разделе собрана информация о рабочих локациях компании:
-              офисах, зданиях, филиалах и других площадках.
-            </p>
-
-            <p className="mt-4 max-w-4xl text-base leading-7 text-stone-400 sm:text-lg">
-              Здесь можно быстро посмотреть, какие объекты есть в компании и где
-              именно они расположены.
+              В этом разделе собрана информация о рабочих локациях компании.
             </p>
           </div>
 
           <div className="rounded-2xl border border-[#2f281f] bg-[#0d1210] px-5 py-4">
             <div className="text-sm uppercase tracking-[0.2em] text-stone-500">
-              получено
+              всего
             </div>
 
             <div className="mt-2 text-3xl font-semibold text-stone-100">
-              {locations?.length ?? 0}
+              {totalCount}
             </div>
           </div>
         </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
+          <label className="relative block">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-500" />
+
+            <input
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Поиск по локациям"
+              className="w-full rounded-2xl border border-[#2f281f] bg-[#0d1210] py-3 pl-12 pr-4 text-base text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-emerald-900/70"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsActive((current) => !current);
+              setPage(1);
+            }}
+            className="rounded-2xl border border-[#2f281f] bg-[#0d1210] px-5 py-3 text-base text-stone-200 transition hover:border-emerald-900/70"
+          >
+            {isActive ? "Активные" : "Неактивные"}
+          </button>
+        </div>
       </section>
 
-      {!locations || locations.length === 0 ? (
+      {locations.length === 0 ? (
         <section className="rounded-3xl border border-[#2f281f] bg-[#111816] p-6 sm:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-950/40 text-emerald-300">
@@ -210,8 +252,7 @@ export default function LocationsPage() {
               </h2>
 
               <p className="mt-2 text-base leading-7 text-stone-400">
-                Список локаций пустой. Проверь данные в базе или текущие
-                параметры запроса.
+                Список пустой. Проверь данные в базе или параметры фильтрации.
               </p>
             </div>
           </div>
@@ -241,7 +282,7 @@ export default function LocationsPage() {
                   </div>
                 </div>
 
-                {IS_ACTIVE_FILTER ? (
+                {isActive ? (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-900/60 bg-emerald-950/40 px-2.5 py-1 text-sm text-emerald-300">
                     <CheckCircle2 className="h-4 w-4" />
                     Активна
@@ -306,30 +347,76 @@ export default function LocationsPage() {
         </section>
       )}
 
-      <section className="flex flex-col gap-3 rounded-3xl border border-[#2f281f] bg-[#111816] p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-base text-stone-400">
-          Страница <span className="text-stone-200">{page}</span>
+      <section className="rounded-2xl border border-[#2f281f] bg-[#111816] p-4">
+        <div className="mb-4 text-center text-base text-stone-400">
+          Страница {currentPage} из {totalPages}
+          <span className="ml-2 text-stone-500">
+            · по {currentPageSize} на странице
+          </span>
+          {isFetching ? " · обновление..." : ""}
         </div>
 
-        <div className="flex gap-3">
-          <button
-            type="button"
-            disabled={page === 1}
-            onClick={handlePrevPage}
-            className="rounded-2xl border border-[#2f281f] bg-[#0d1210] px-4 py-2 text-base text-stone-200 transition hover:bg-emerald-950/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Назад
-          </button>
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                text="Назад"
+                onClick={(event) => {
+                  event.preventDefault();
+                  handlePageChange(currentPage - 1);
+                }}
+                className={
+                  currentPage <= 1
+                    ? "pointer-events-none opacity-40"
+                    : "text-stone-200"
+                }
+              />
+            </PaginationItem>
 
-          <button
-            type="button"
-            disabled={!locations || locations.length < PAGE_SIZE}
-            onClick={handleNextPage}
-            className="rounded-2xl border border-[#2f281f] bg-[#0d1210] px-4 py-2 text-base text-stone-200 transition hover:bg-emerald-950/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Вперед
-          </button>
-        </div>
+            {paginationPages.map((paginationPage, index) =>
+              paginationPage === "..." ? (
+                <PaginationItem key={`ellipsis-${index}`}>
+                  <PaginationEllipsis className="text-stone-500" />
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={paginationPage}>
+                  <PaginationLink
+                    href="#"
+                    isActive={paginationPage === currentPage}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      handlePageChange(paginationPage);
+                    }}
+                    className={
+                      paginationPage === currentPage
+                        ? "border-emerald-900/70 bg-emerald-950/40 text-emerald-300"
+                        : "text-stone-300 hover:text-white"
+                    }
+                  >
+                    {paginationPage}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                text="Вперёд"
+                onClick={(event) => {
+                  event.preventDefault();
+                  handlePageChange(currentPage + 1);
+                }}
+                className={
+                  currentPage >= totalPages
+                    ? "pointer-events-none opacity-40"
+                    : "text-stone-200"
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </section>
     </div>
   );

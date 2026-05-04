@@ -3,9 +3,8 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
 import { cn } from "@/shared/lib/utils";
-import Header from "@/features/header/header";
-import { AppSidebar } from "@/features/sidebar/app.sidebar";
-import { SidebarInset, SidebarProvider } from "@/shared/components/ui/sidebar";
+import Layout from "@/features/layout/app-layout";
+import { Providers } from "./providers";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -48,17 +47,9 @@ export default function RootLayout({
           "min-h-screen bg-[#0a0d0c] text-stone-100 antialiased"
         )}
       >
-        <SidebarProvider defaultOpen={true}>
-          <AppSidebar />
-
-          <SidebarInset className="min-w-0 bg-[#0a0d0c]">
-            <Header />
-
-            <main className="flex-1 overflow-x-hidden px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:px-10 xl:py-10">
-              <div className="mx-auto w-full max-w-7xl">{children}</div>
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
+        <Providers>
+          <Layout>{children}</Layout>
+        </Providers>
       </body>
     </html>
   );

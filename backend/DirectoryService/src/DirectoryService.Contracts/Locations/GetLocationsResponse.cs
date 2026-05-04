@@ -1,8 +1,10 @@
 ﻿namespace DirectoryService.Contracts.Locations;
 
 public record GetLocationsResponse
-{
-    public IReadOnlyList<LocationDto> Items { get; init; } = null!;
-
-    public long TotalCount { get; init; }
-}
+(
+    IReadOnlyList<LocationDto> Items,
+    long TotalCount,
+    int Page,
+    int PageSize,
+    int TotalPages
+);
