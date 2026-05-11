@@ -15,6 +15,7 @@ import {
 import { locationsApi } from "@/entities/locations/api";
 import type { Location } from "@/entities/locations/types";
 import { Spinner } from "@/shared/components/ui/spinner";
+import { isEnvelopeError } from "@/shared/api/errors";
 
 const PAGE_SIZE = 100;
 const IS_ACTIVE_FILTER = true;
@@ -61,22 +62,22 @@ export default function LocationDetailsPage() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["location", locationId, queryParams],
+    queryKey: ["location", locationId],
     queryFn: async () => {
-     const response = await locationsApi.getLocations({
-  departmentIds: queryParams.departmentIds,
-  search: queryParams.search,
-  isActive: queryParams.isActive,
-  page: queryParams.page,
-  pageSize: queryParams.pageSize,
-});
+      const response = await locationsApi.getLocations({
+        departmentIds: queryParams.departmentIds,
+        search: queryParams.search,
+        isActive: queryParams.isActive,
+        page: queryParams.page,
+        pageSize: queryParams.pageSize,
+      });
 
       const currentLocation = response.items.find(
         (item) => item.id === locationId
       );
 
       if (!currentLocation) {
-        throw new Error("Локация не найдена в полученном списке");
+        throw new Error("Локация не найдена");
       }
 
       return currentLocation;
@@ -95,7 +96,7 @@ export default function LocationDetailsPage() {
     );
   }
 
-  if (isError) {
+  if (isError || !location) {
     return (
       <section className="rounded-3xl border border-red-950/70 bg-[#111816] p-6 sm:p-8 lg:p-10">
         <Link
@@ -115,16 +116,14 @@ export default function LocationDetailsPage() {
         </h1>
 
         <p className="mt-4 max-w-3xl text-base leading-7 text-stone-300 sm:text-lg">
-          {error instanceof Error
-            ? error.message
-            : "Не удалось загрузить локацию"}
+          {isEnvelopeError(error)
+            ? error.firstMessage
+            : error instanceof Error
+              ? error.message
+              : "Не удалось загрузить локацию"}
         </p>
       </section>
     );
-  }
-
-  if (!location) {
-    return null;
   }
 
   return (
@@ -195,16 +194,6 @@ export default function LocationDetailsPage() {
 
                 <div className="mt-2 text-base text-stone-200">
                   {location.address.street || "Не указана"}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-[#2f281f] bg-[#0d1210] px-4 py-3">
-                <div className="text-sm uppercase tracking-[0.16em] text-stone-500">
-                  номер здания
-                </div>
-
-                <div className="mt-2 text-base text-stone-200">
-                  {location.address.buildingNumber || "Не указан"}
                 </div>
               </div>
 
