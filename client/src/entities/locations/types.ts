@@ -3,6 +3,7 @@ export type Location = {
     name: string;
     address: AddressDto;
     timeZone: string;
+    isActive: boolean;
     createdAt: string;
     departments: Array<DepartmentInfoDto>;
 };

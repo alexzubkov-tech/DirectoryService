@@ -46,10 +46,35 @@ public class Location
     public static Result<Location, Error> Create(LocationName name, LocationAddress locationAddress, LocationTimeZone timezone)
         => new Location(name, locationAddress, timezone);
 
+    public void UpdateName(LocationName name)
+    {
+        LocationName = name;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateAddress(LocationAddress address)
+    {
+        LocationAddress = address;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateTimezone(LocationTimeZone timezone)
+    {
+        Timezone = timezone;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void Deactivate()
     {
         IsActive = false;
         DeletedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Activate()
+    {
+        IsActive = true;
+        DeletedAt = null;
         UpdatedAt = DateTime.UtcNow;
     }
 }

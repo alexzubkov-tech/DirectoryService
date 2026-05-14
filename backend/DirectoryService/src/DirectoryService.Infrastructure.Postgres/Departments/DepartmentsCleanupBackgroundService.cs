@@ -12,13 +12,13 @@ namespace DirectoryService.Infrastructure.Departments;
 public sealed class DepartmentsCleanupBackgroundService : BackgroundService
 {
     private readonly IDbConnectionFactory _connectionFactory;
-    private readonly IOptionsMonitor<CleanupOptions> _optionsMonitor;
+    private readonly IOptionsMonitor<DepartmentCleanupOptions> _optionsMonitor;
     private readonly ILogger<DepartmentsCleanupBackgroundService> _logger;
     private readonly HybridCache _cache;
 
     public DepartmentsCleanupBackgroundService(
         IDbConnectionFactory connectionFactory,
-        IOptionsMonitor<CleanupOptions> optionsMonitor,
+        IOptionsMonitor<DepartmentCleanupOptions> optionsMonitor,
         ILogger<DepartmentsCleanupBackgroundService> logger,
         HybridCache cache)
     {

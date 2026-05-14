@@ -40,6 +40,12 @@ public class LocationsRepository: ILocationsRepository
                 return LocationApplicationErrors.AlreadyExistsByName(location.LocationName.Value);
             }
 
+            if (pgEx.SqlState == PostgresErrorCodes.UniqueViolation &&
+                pgEx.ConstraintName?.Contains("ix_locations_address", StringComparison.InvariantCultureIgnoreCase) == true)
+            {
+                return LocationApplicationErrors.AlreadyExistsByAddress(location.LocationAddress.ToString());
+            }
+
             _logger.LogError(ex, "Database update error while creating location with name {locationName}",
                 location.LocationName.Value);
             return LocationInfrastructureErrors.DatabaseError();
@@ -84,5 +90,57 @@ public class LocationsRepository: ILocationsRepository
         }
 
         return location;
+    }
+
+    public async Task<Result<Location, Error>> GetByIdWithLock(
+        LocationId locationId,
+        CancellationToken cancellationToken = default)
+    {
+        var location = await _dbContext.Locations
+            .FromSql($"SELECT * FROM locations WHERE location_id = {locationId.Value} FOR UPDATE")
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (location is null)
+        {
+            return LocationApplicationErrors.NotFound(locationId.Value);
+        }
+
+        return location;
+    }
+
+    public async Task<UnitResult<Error>> UpdateAsync(
+        Location location,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return UnitResult.Success<Error>();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx)
+        {
+            if (pgEx.SqlState == PostgresErrorCodes.UniqueViolation &&
+                pgEx.ConstraintName?.Contains("ix_locations_name", StringComparison.InvariantCultureIgnoreCase) == true)
+            {
+                return LocationApplicationErrors.AlreadyExistsByName(location.LocationName.Value);
+            }
+
+            if (pgEx.SqlState == PostgresErrorCodes.UniqueViolation &&
+                pgEx.ConstraintName?.Contains("ix_locations_address", StringComparison.InvariantCultureIgnoreCase) == true)
+            {
+                return LocationApplicationErrors.AlreadyExistsByAddress(location.LocationAddress.ToString());
+            }
+
+            _logger.LogError(ex, "Database update error while updating location with id {LocationId}",
+                location.Id.Value);
+            return LocationInfrastructureErrors.DatabaseError();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while updating location with id {LocationId}",
+                location.Id.Value);
+            return LocationInfrastructureErrors.DatabaseError();
+        }
     }
 }

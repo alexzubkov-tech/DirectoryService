@@ -18,6 +18,12 @@ public static class LocationApplicationErrors
             message: $"Локация с идентификатором '{locationId}' неактивна.",
             invalidField: "locationId");
 
+    public static Error Active(Guid locationId) =>
+        Error.Validation(
+            code: "location.active",
+            message: $"Локация с идентификатором '{locationId}' уже активна.",
+            invalidField: "locationId");
+
     public static Error AlreadyExistsByName(string name) =>
         Error.Conflict(
             code: "location.already.exists.by.name",

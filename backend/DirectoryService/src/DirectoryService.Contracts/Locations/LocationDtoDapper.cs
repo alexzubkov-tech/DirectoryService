@@ -18,6 +18,8 @@ public record LocationDtoDapper
 
     public string BuildingNumber { get; init; } = null!;
 
+    public bool IsActive { get; init; }
+
     public DateTime CreatedAt { get; init; }
 
     public List<DepartmentInfoDto> Departments { get;  init; } = [];

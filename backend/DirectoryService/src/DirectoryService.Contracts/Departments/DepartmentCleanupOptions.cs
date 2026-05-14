@@ -1,6 +1,6 @@
 ﻿namespace DirectoryService.Contracts.Departments;
 
-public record CleanupOptions
+public record DepartmentCleanupOptions
 {
     public const string SECTION_NAME = "DepartmentCleanup";
 

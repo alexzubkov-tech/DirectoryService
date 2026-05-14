@@ -59,6 +59,7 @@ function SidebarProvider({
   className,
   style,
   children,
+  onKeyDownCapture,
   ...props
 }: React.ComponentProps<"div"> & {
   defaultOpen?: boolean
@@ -92,9 +93,12 @@ function SidebarProvider({
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
 
-  // Adds a keyboard shortcut to toggle the sidebar.
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDownCapture = React.useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownCapture?.(event)
+
+      if (event.defaultPrevented) return
+
       if (
         event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
         (event.metaKey || event.ctrlKey)
@@ -102,11 +106,9 @@ function SidebarProvider({
         event.preventDefault()
         toggleSidebar()
       }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggleSidebar])
+    },
+    [onKeyDownCapture, toggleSidebar]
+  )
 
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.
@@ -140,6 +142,7 @@ function SidebarProvider({
           "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
           className
         )}
+        onKeyDownCapture={handleKeyDownCapture}
         {...props}
       >
         {children}

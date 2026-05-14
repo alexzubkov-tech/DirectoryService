@@ -1,0 +1,9 @@
+export { LocationsPage } from "./ui/locations-page";
+export { LocationDetailsPage } from "./ui/location-details-page";
+export { LocationsList } from "./ui/locations-list";
+export { LocationsPagination } from "./ui/locations-pagination";
+export { LocationFormDialog } from "./ui/location-form-dialog";
+export { useCreateLocation } from "./model/use-create-location";
+export { useDeleteLocation } from "./model/use-delete-location";
+export { useLocationsList } from "./model/use-locations-list";
+export { useUpdateLocation } from "./model/use-update-location";
