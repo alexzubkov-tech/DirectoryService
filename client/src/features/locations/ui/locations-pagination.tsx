@@ -112,7 +112,7 @@ export function LocationsPagination({
                   {paginationPage}
                 </PaginationLink>
               </PaginationItem>
-            )
+            ),
           )}
 
           <PaginationItem>

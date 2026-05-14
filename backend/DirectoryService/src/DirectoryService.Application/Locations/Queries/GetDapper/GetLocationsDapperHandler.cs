@@ -74,6 +74,7 @@ public class GetLocationsDapperHandler
                                           l.location_name,
                                           l.timezone,
                                           l.address,
+                                          l.is_active,
                                           l.created_at
                                    FROM locations l
                                    LEFT JOIN department_locations dl ON dl.location_id = l.location_id
@@ -99,6 +100,7 @@ public class GetLocationsDapperHandler
                                    l.address->>'City' AS City,
                                    l.address->>'Street' AS Street,
                                    l.address->>'BuildingNumber' AS BuildingNumber,
+                                   l.is_active AS IsActive,
                                    l.created_at AS CreatedAt,
                                    d.department_id AS Id,
                                    d.department_identifier AS Identificator

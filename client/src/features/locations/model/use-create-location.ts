@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { locationsApi } from "@/entities/locations/api";
+import { toast } from "sonner";
+
+import { locationsApi, locationsQueryOptions } from "@/entities/locations/api";
 import type { CreateLocationRequest } from "@/entities/locations/api";
 import { isEnvelopeError } from "@/shared/api/errors";
 
@@ -15,7 +16,6 @@ export type CreateLocationFormData = {
 
 export function useCreateLocation() {
     const queryClient = useQueryClient();
-    const router = useRouter();
 
     const mutation = useMutation({
         mutationFn: async (formData: CreateLocationFormData) => {
@@ -32,19 +32,23 @@ export function useCreateLocation() {
 
             return locationsApi.createLocation(request);
         },
+        onSettled: () => {
+            queryClient.invalidateQueries({
+                queryKey: locationsQueryOptions.baseKey,
+            });
+        },
         onSuccess: () => {
-            // Инвалидируем кэш списка локаций чтобы он обновился
-            queryClient.invalidateQueries({ queryKey: ["locations"] });
-            router.push("/locations");
+            toast.success("Локация успешно создана");
+        },
+        onError: () => {
+            toast.error("Ошибка при создании локации");
         },
     });
 
     return {
-        mutate: mutation.mutate,
-        mutateAsync: mutation.mutateAsync,
-        isPending: mutation.isPending,
+        createLocation: mutation.mutate,
         isError: mutation.isError,
         error: isEnvelopeError(mutation.error) ? mutation.error : undefined,
-        isSuccess: mutation.isSuccess,
+        isPending: mutation.isPending,
     };
 }

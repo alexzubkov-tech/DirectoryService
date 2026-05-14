@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using CSharpFunctionalExtensions;
 using DirectoryService.Domain.Locations;
+using DirectoryService.Domain.Locations.ValueObjects;
 using Shared.SharedKernel;
 
 namespace DirectoryService.Application.Locations;
@@ -16,4 +17,11 @@ public interface ILocationsRepository
         bool includeInactive = false,
         CancellationToken cancellationToken = default);
 
+    Task<Result<Location, Error>> GetByIdWithLock(
+        LocationId locationId,
+        CancellationToken cancellationToken = default);
+
+    Task<UnitResult<Error>> UpdateAsync(
+        Location location,
+        CancellationToken cancellationToken = default);
 }

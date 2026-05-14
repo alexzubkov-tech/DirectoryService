@@ -35,7 +35,9 @@ public class GetLocationsHandler : IQueryHandler<GetLocationsResponse, GetLocati
         int page = request.Page;
         int pageSize = request.PageSize;
 
-        var filteredQuery = _context.LocationsRead.AsNoTracking();
+        var filteredQuery = _context.LocationsRead
+            .IgnoreQueryFilters()
+            .AsNoTracking();
 
         if (request.IsActive.HasValue)
             filteredQuery = filteredQuery.Where(l => l.IsActive == request.IsActive.Value);
@@ -82,11 +84,12 @@ public class GetLocationsHandler : IQueryHandler<GetLocationsResponse, GetLocati
                     BuildingNumber = l.LocationAddress.BuildingNumber,
                 },
                 TimeZone = l.Timezone.Value,
+                IsActive = l.IsActive,
                 CreatedAt = l.CreatedAt,
                 Departments = (
                     from dl in _context.DepartmentLocationsRead
                     join d in _context.DepartmentsRead on dl.DepartmentId equals d.Id
-                    where dl.LocationId == l.Id
+                    where dl.LocationId == l.Id && d.IsActive
                     select new DepartmentInfoDto
                     {
                         Id = d.Id.Value,

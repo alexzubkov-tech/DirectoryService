@@ -12,6 +12,8 @@ public record LocationDto
 
     public string TimeZone { get; init; } = null!;
 
+    public bool IsActive { get; init; }
+
     public DateTime CreatedAt { get; init; }
 
     public IReadOnlyList<DepartmentInfoDto> Departments { get; init; } = new List<DepartmentInfoDto>();

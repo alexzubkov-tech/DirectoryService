@@ -5,7 +5,7 @@ import { EnvelopeError } from "./errors";
 export const apiClient = axios.create({
     baseURL: "http://localhost:9001/api",
     headers: { "Content-Type": "application/json" },
-    timeout: 5000, // 5 секунд таймаут запроса
+    timeout: 5000,
 });
 
 apiClient.interceptors.response.use(
@@ -19,7 +19,6 @@ apiClient.interceptors.response.use(
         return response;
     },
     (error) => {
-        // Обработка таймаута
         if (axios.isAxiosError(error)) {
             if (error.code === "ECONNABORTED") {
                 throw new Error(

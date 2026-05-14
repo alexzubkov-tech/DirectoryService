@@ -1,10 +1,12 @@
 ﻿using Core.Abstractions;
 using Core.Validation;
 using CSharpFunctionalExtensions;
+using DirectoryService.Application.Common.Caching;
 using DirectoryService.Application.Locations.Fails;
 using DirectoryService.Domain.Locations;
 using DirectoryService.Domain.Locations.ValueObjects;
 using FluentValidation;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using Shared.SharedKernel;
 
@@ -15,15 +17,18 @@ public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
     private readonly IValidator<CreateLocationCommand> _validator;
     private readonly ILocationsRepository _locationsRepository;
     private readonly ILogger<CreateLocationHandler> _logger;
+    private readonly HybridCache _cache;
 
     public CreateLocationHandler(
         IValidator<CreateLocationCommand> validator,
         ILocationsRepository locationsRepository,
-        ILogger<CreateLocationHandler> logger)
+        ILogger<CreateLocationHandler> logger,
+        HybridCache cache)
     {
         _validator = validator;
         _locationsRepository = locationsRepository;
         _logger = logger;
+        _cache = cache;
     }
 
     public async Task<Result<Guid, Errors>> Handle(CreateLocationCommand command, CancellationToken cancellationToken)
@@ -85,6 +90,8 @@ public class CreateLocationHandler: ICommandHandler<Guid, CreateLocationCommand>
         var addResult = await _locationsRepository.AddAsync(location, cancellationToken);
         if (addResult.IsFailure)
             return addResult.Error.ToErrors();
+
+        await _cache.RemoveByTagAsync(CacheTags.LOCATIONS_LIST, cancellationToken);
 
         // Логирование
         _logger.LogInformation("Location created with id {LocationId}", location.Id);

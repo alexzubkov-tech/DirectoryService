@@ -236,7 +236,7 @@ public abstract class DirectoryServiceBaseTests : IClassFixture<DirectoryTestWeb
 
         var service = new DepartmentsCleanupBackgroundService(
             connectionFactory,
-            scope.ServiceProvider.GetRequiredService<IOptionsMonitor<CleanupOptions>>(),
+            scope.ServiceProvider.GetRequiredService<IOptionsMonitor<DepartmentCleanupOptions>>(),
             scope.ServiceProvider.GetRequiredService<ILogger<DepartmentsCleanupBackgroundService>>(),
             scope.ServiceProvider.GetRequiredService<HybridCache>());
 
